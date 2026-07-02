@@ -7,19 +7,23 @@ import net.dungeonhub.promptoverlay.service.KeyMappingService
 import net.minecraft.client.Minecraft
 import java.awt.Color
 
-class FriendRequestOverlay(val from: String): AcceptableOverlay, DeniableOverlay, TwoActionsOverlay {
-    override val borderColor: Color = Color.PINK
-    override val message: String = "Friend request from $from"
+class TrapperHuntOverlay(val acceptCommand: String, val denyCommand: String) : AcceptableOverlay, DeniableOverlay, TwoActionsOverlay {
+    override val borderColor: Color = Color(0xA52A2A)
+    override val message: String = "Accept the Trapper's hunting task?"
 
     override fun accept() {
+        val command = if(acceptCommand.startsWith("/")) acceptCommand.substring(1) else acceptCommand
+
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand("friend accept $from")
+            Minecraft.getInstance().player?.connection?.sendCommand(command)
         }
     }
 
     override fun deny() {
+        val command = if(denyCommand.startsWith("/")) denyCommand.substring(1) else denyCommand
+
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand("friend deny $from")
+            Minecraft.getInstance().player?.connection?.sendCommand(command)
         }
     }
 

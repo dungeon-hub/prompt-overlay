@@ -8,12 +8,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import net.dungeonhub.promptoverlay.PromptOverlay
+import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.render.Overlay
 import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.resources.Identifier
+import java.time.LocalDate
+import java.time.Month
 import java.util.concurrent.Executors
 import kotlin.math.pow
 import kotlin.time.Duration.Companion.seconds
@@ -31,7 +34,6 @@ object OverlayFeature {
     private var animationOutType: RemoveType? = null
 
     private val ANIMATION_DURATION = 500.milliseconds
-    private val AUTO_DISMISS_DURATION = 5.seconds
 
     private val supervisor = SupervisorJob()
     private val dispatcher = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
@@ -62,7 +64,7 @@ object OverlayFeature {
         }
 
         hideMessageJob = scheduler.launch {
-            delay(AUTO_DISMISS_DURATION)
+            delay(OverlayCategory.overlayDisplayDuration.seconds)
 
             if(currentOverlay == overlay) {
                 removeOverlay(RemoveType.Dismiss)
@@ -183,8 +185,7 @@ object OverlayFeature {
         val cornerRadius = 8
 
         // Draw background
-        val backgroundColor = 0x60000000
-        drawBox(graphics, x, y, boxWidth, totalHeight, cornerRadius, backgroundColor)
+        drawBox(graphics, x, y, boxWidth, totalHeight, cornerRadius, OverlayCategory.backgroundColor)
 
         // Draw rounded border
         drawBorders(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, borderColor)
@@ -196,12 +197,20 @@ object OverlayFeature {
         // Calculate loading bar progress (0.0 to 1.0 as time passes)
         if (!isAnimatingOut) {
             val elapsedDismissMs = System.currentTimeMillis() - autoDismissStartTime
-            val dismissProgress = (elapsedDismissMs.toDouble() / AUTO_DISMISS_DURATION.inWholeMilliseconds).coerceIn(0.0, 1.0)
+            val dismissProgress = (elapsedDismissMs.toDouble() / OverlayCategory.overlayDisplayDuration.seconds.inWholeMilliseconds).coerceIn(0.0, 1.0)
             val filledWidth = (separatorWidth * dismissProgress).toInt()
 
-            // Draw filled portion with border color
+            val isJune = LocalDate.now().month == Month.JUNE
+
+            // Draw filled portion
             if (filledWidth > 0) {
-                graphics.fill(x + padding, separatorY, x + padding + filledWidth, separatorY + 2, borderColor)
+                if (isJune || OverlayCategory.alwaysPrideMonth) {
+                    // Draw rainbow gradient
+                    drawRainbowBar(graphics, x + padding, separatorY, filledWidth, 2)
+                } else {
+                    // Draw with border color
+                    graphics.fill(x + padding, separatorY, x + padding + filledWidth, separatorY + 2, borderColor)
+                }
             }
 
             // Draw empty portion with dim color
@@ -210,7 +219,13 @@ object OverlayFeature {
             }
         } else {
             // When animating out, show full bar
-            graphics.fill(x + padding, separatorY, x + boxWidth - padding, separatorY + 2, borderColor)
+            val isJune = LocalDate.now().month == Month.JUNE
+
+            if (isJune || OverlayCategory.alwaysPrideMonth) {
+                drawRainbowBar(graphics, x + padding, separatorY, separatorWidth, 2)
+            } else {
+                graphics.fill(x + padding, separatorY, x + boxWidth - padding, separatorY + 2, borderColor)
+            }
         }
 
         // Render message (centered)
@@ -246,5 +261,41 @@ object OverlayFeature {
         graphics.fill(x, y, x + thickness, y + height, color)
         // Right border
         graphics.fill(x + width - thickness, y, x + width, y + height, color)
+    }
+
+    private fun drawRainbowBar(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int) {
+        // Rainbow colors: red, orange, yellow, green, cyan, blue, purple
+        val rainbowColors = intArrayOf(
+            0xFFE40603.toInt(), // Red
+            0xFFFB9101.toInt(), // Orange
+            0xFFE4F900.toInt(), // Yellow
+            0xFF05BB1B.toInt(), // Green
+            0xFF00A8FD.toInt(), // Cyan
+            0xFF1E43D9.toInt(), // Blue
+            0xFFCC009F.toInt()  // Purple
+        )
+
+        // Draw gradient by interpolating between colors for each pixel
+        for (i in 0 until width) {
+            val progress = i.toFloat() / width.toFloat()
+            val colorIndex = progress * (rainbowColors.size - 1)
+            val index1 = colorIndex.toInt().coerceIn(0, rainbowColors.size - 2)
+            val index2 = (index1 + 1).coerceIn(0, rainbowColors.size - 1)
+            val blend = colorIndex - index1
+
+            val color1 = rainbowColors[index1]
+            val color2 = rainbowColors[index2]
+
+            val r = lerp((color1 shr 16) and 0xFF, (color2 shr 16) and 0xFF, blend)
+            val g = lerp((color1 shr 8) and 0xFF, (color2 shr 8) and 0xFF, blend)
+            val b = lerp(color1 and 0xFF, color2 and 0xFF, blend)
+
+            val blendedColor = (0xFF000000.toInt()) or (r shl 16) or (g shl 8) or b
+            graphics.fill(x + i, y, x + i + 1, y + height, blendedColor)
+        }
+    }
+
+    private fun lerp(a: Int, b: Int, t: Float): Int {
+        return (a + (b - a) * t).toInt()
     }
 }

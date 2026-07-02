@@ -5,7 +5,7 @@ import com.teamresourceful.resourcefulconfigkt.api.CategoryKt
 import net.dungeonhub.promptoverlay.PromptOverlay.MOD_ID
 import net.dungeonhub.promptoverlay.config.Config
 
-object DevCategory : CategoryKt("$MOD_ID/auth") {
+object DevCategory : CategoryKt("$MOD_ID/dev") {
     override val name: TranslatableValue
         get() = Literal("Developer")
 
