@@ -17,7 +17,7 @@ object ChatHandler {
         for(regex in ChatRegex.entries) {
             val result = regex.regex.find(message.string) ?: continue
 
-            regex.action(result)
+            regex.action(message, result)
         }
     }
 }
