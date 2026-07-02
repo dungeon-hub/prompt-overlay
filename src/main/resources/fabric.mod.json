@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "id": "prompt-overlay",
+  "version": "${version}",
+  "name": "Prompt Overlay",
+  "description": "Prompt Overlay replaces supported chat prompts with a clean, interactive overlay, allowing you to quickly respond using your keyboard instead of clicking chat messages.",
+  "authors": [
+    "Taubsie"
+  ],
+  "contact": {
+    "homepage": "https://dungeon-hub.net/",
+    "discord": "https://discord.dungeon-hub.net/",
+    "sources": "https://github.com/dungeon-hub/prompt-overlay/"
+  },
+  "license": "EUPL-1.2",
+  "icon": "assets/prompt-overlay/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "net.dungeonhub.promptoverlay.PromptOverlay"
+      }
+    ]
+  },
+  "mixins": [
+    {
+      "config": "prompt-overlay.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric-language-kotlin": ">=${kotlin_loader_version}",
+    "fabric-api": "*",
+    "minecraft": "${minecraft_version}",
+    "resourcefulconfig": ">=4.0.1"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "https://discord.dungeon-hub.net/"
+      }
+    }
+  }
+}
