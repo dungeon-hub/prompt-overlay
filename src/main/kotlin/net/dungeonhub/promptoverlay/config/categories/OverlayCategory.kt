@@ -21,6 +21,16 @@ object OverlayCategory : CategoryKt("$MOD_ID/overlay") {
         allowAlpha = true
     }
 
+    val friendColor by color("friend_color", Color.PINK.rgb) {
+        name = Literal("Friend Color")
+        description = Literal("The color of the friend request overlay.")
+    }
+
+    val guildColor by color("guild_color", Color.GREEN.rgb) {
+        name = Literal("Guild Color")
+        description = Literal("The color of the guild request overlay.")
+    }
+
     val partyColor by color("party_color", Color.BLUE.rgb) {
         name = Literal("Party Color")
         description = Literal("The color of the party invite overlay.")
@@ -29,6 +39,16 @@ object OverlayCategory : CategoryKt("$MOD_ID/overlay") {
     val tradeColor by color("trade_color", Color(0x2BA801).rgb) {
         name = Literal("Trade Color")
         description = Literal("The color of the Skyblock trade overlay.")
+    }
+
+    val trapperColor by color("trapper_color", Color(0xA52A2A).rgb) {
+        name = Literal("Trapper Color")
+        description = Literal("The color of the Trapper Hunt overlay.")
+    }
+
+    val trophyFishColor by color("trophy_fish_color", Color.YELLOW.rgb) {
+        name = Literal("Trophy Fish Color")
+        description = Literal("The color of the Trophy Fish GG overlay.")
     }
 
     val alwaysPrideMonth by boolean("always_pride_month", false) {

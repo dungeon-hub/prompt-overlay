@@ -1,5 +1,6 @@
 package net.dungeonhub.promptoverlay.overlays
 
+import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.render.AcceptableOverlay
 import net.dungeonhub.promptoverlay.render.DeniableOverlay
 import net.dungeonhub.promptoverlay.render.TwoActionsOverlay
@@ -8,7 +9,7 @@ import net.minecraft.client.Minecraft
 import java.awt.Color
 
 class TrapperHuntOverlay(val acceptCommand: String, val denyCommand: String) : AcceptableOverlay, DeniableOverlay, TwoActionsOverlay {
-    override val borderColor: Color = Color(0xA52A2A)
+    override val borderColor: Color = Color(OverlayCategory.trapperColor)
     override val message: String = "Accept the Trapper's hunting task?"
 
     override fun accept() {

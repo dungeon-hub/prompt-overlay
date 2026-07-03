@@ -1,5 +1,6 @@
 package net.dungeonhub.promptoverlay.overlays
 
+import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.render.AcceptableOverlay
 import net.dungeonhub.promptoverlay.render.OneActionOverlay
 import net.dungeonhub.promptoverlay.service.KeyMappingService
@@ -13,7 +14,7 @@ class TrophyFishGgOverlay: AcceptableOverlay, OneActionOverlay {
         }
     }
 
-    override val borderColor: Color = Color.YELLOW
+    override val borderColor: Color = Color(OverlayCategory.trophyFishColor)
     override val message: String = "Congratulate for a rare drop"
     override val firstText: String
         get() {
