@@ -2,6 +2,7 @@ package net.dungeonhub.promptoverlay.enums
 
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
 import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
+import net.dungeonhub.promptoverlay.overlays.PartyInviteOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
 import net.dungeonhub.promptoverlay.overlays.TrophyFishGgOverlay
 import net.minecraft.network.chat.ClickEvent
@@ -12,6 +13,11 @@ enum class ChatRegex(val regex: Regex, val action: (message: Component, result: 
         val player = result.groups["player"]?.value
 
         if(player != null) OverlayFeature.setOverlay(FriendRequestOverlay(player))
+    }),
+    PartyInvite(Regex("(?:\\[.*] )?(?<player>\\S{1,16}) has invited you to join (?:their|(?:\\[.*] ?)?\\w{1,16}'s)? party!"), action={ _, result ->
+        val player = result.groups["player"]?.value
+
+        if(player != null) OverlayFeature.setOverlay(PartyInviteOverlay(player))
     }),
     TrapperHunt(Regex("Accept the trapper's task to hunt the animal?"), action={ message, _ ->
         var acceptCommand: String? = null
