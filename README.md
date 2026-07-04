@@ -15,6 +15,7 @@ The project aims to provide a lightweight, intuitive way to interact with common
 * [x] Duel requests
 * [x] Trophy Fish GG prompt
 * [x] Auto requeue into a dungeon
+* [x] Abiphone calls
 * [ ] Announce rare drops in guild/party/public chat
 
 ### Dialogs

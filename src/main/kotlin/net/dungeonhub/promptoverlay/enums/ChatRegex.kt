@@ -1,6 +1,8 @@
 package net.dungeonhub.promptoverlay.enums
 
+import net.dungeonhub.promptoverlay.feature.ChatHandler
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
+import net.dungeonhub.promptoverlay.overlays.AbiphoneCallOverlay
 import net.dungeonhub.promptoverlay.overlays.CatacombsRequeueOverlay
 import net.dungeonhub.promptoverlay.overlays.DuelInviteOverlay
 import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
@@ -15,6 +17,14 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 
 enum class ChatRegex(val regex: Regex, val action: (message: Component, result: MatchResult) -> Unit) {
+    AbiphoneCall(Regex("✆ RING... RING... RING..."), action={ message, _ ->
+        val command = findClickCommand(message) { it.contains("[PICK UP]") }
+        val caller = extractAbiphoneCaller()
+
+        if(command != null) {
+            OverlayFeature.setOverlay(AbiphoneCallOverlay(caller, command))
+        }
+    }),
     CatacombsRequeue(Regex("Click §e§lHERE §7to re-queue into (§c§lMM§c |§c§a)The Catacombs"), action={ message, _ ->
         val info = extractCatacombsInfo(message)
 
@@ -162,6 +172,23 @@ enum class ChatRegex(val regex: Regex, val action: (message: Component, result: 
             }
 
             return null
+        }
+
+        /**
+         * Extracts the caller name from recent Abiphone call messages.
+         * Searches the last 5 messages for the pattern "§e✆ Fann ✆ §7" or "§e✆ §dSuus §e✆"
+         *
+         * @return The caller's name, or null if not found
+         */
+        private fun extractAbiphoneCaller(): String? {
+            val callerPattern = Regex("✆ (.+) (§e)?✆")
+            val recentMessage = ChatHandler.findInHistory(5) { message ->
+                callerPattern.containsMatchIn(message)
+            }
+
+            return recentMessage?.let { msg ->
+                callerPattern.find(msg.string)?.groups?.get(1)?.value
+            }
         }
     }
 }

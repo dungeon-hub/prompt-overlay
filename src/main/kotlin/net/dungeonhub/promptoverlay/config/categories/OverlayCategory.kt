@@ -21,6 +21,11 @@ object OverlayCategory : CategoryKt("$MOD_ID/overlay") {
         allowAlpha = true
     }
 
+    val abiphoneColor by color("abiphone_call_color", Color.LIGHT_GRAY.rgb) {
+        name = Literal("Abiphone Call Color")
+        description = Literal("The color of the abiphone call overlay.")
+    }
+
     val catacombsRequeueColor by color("catacombs_requeue_color", Color.DARK_GRAY.rgb) {
         name = Literal("Catacombs Requeue Color")
         description = Literal("The color of the catacombs requeue overlay.")
