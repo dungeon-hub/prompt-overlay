@@ -21,6 +21,11 @@ object OverlayCategory : CategoryKt("$MOD_ID/overlay") {
         allowAlpha = true
     }
 
+    val catacombsRequeueColor by color("catacombs_requeue_color", Color.DARK_GRAY.rgb) {
+        name = Literal("Catacombs Requeue Color")
+        description = Literal("The color of the catacombs requeue overlay.")
+    }
+
     val duelColor by color("duel_color", Color.RED.rgb) {
         name = Literal("Duel Color")
         description = Literal("The color of the duel invite overlay.")

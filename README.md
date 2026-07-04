@@ -14,7 +14,7 @@ The project aims to provide a lightweight, intuitive way to interact with common
 * [x] SkyBlock trade requests
 * [x] Duel requests
 * [x] Trophy Fish GG prompt
-* [ ] Auto requeue into a dungeon
+* [x] Auto requeue into a dungeon
 * [ ] Announce rare drops in guild/party/public chat
 
 ### Dialogs

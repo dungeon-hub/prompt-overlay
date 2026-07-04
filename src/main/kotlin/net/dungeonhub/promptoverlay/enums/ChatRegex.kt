@@ -1,6 +1,7 @@
 package net.dungeonhub.promptoverlay.enums
 
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
+import net.dungeonhub.promptoverlay.overlays.CatacombsRequeueOverlay
 import net.dungeonhub.promptoverlay.overlays.DuelInviteOverlay
 import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
 import net.dungeonhub.promptoverlay.overlays.GuildRequestOverlay
@@ -8,10 +9,20 @@ import net.dungeonhub.promptoverlay.overlays.PartyInviteOverlay
 import net.dungeonhub.promptoverlay.overlays.SkyblockTradeOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
 import net.dungeonhub.promptoverlay.overlays.TrophyFishGgOverlay
+import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
 
 enum class ChatRegex(val regex: Regex, val action: (message: Component, result: MatchResult) -> Unit) {
+    CatacombsRequeue(Regex("Click §e§lHERE §7to re-queue into (§c§lMM§c |§c§a)The Catacombs"), action={ message, _ ->
+        val info = extractCatacombsInfo(message)
+
+        if (info != null) {
+            val (type, floor) = info
+            OverlayFeature.setOverlay(CatacombsRequeueOverlay("$type $floor"))
+        }
+    }),
     DuelInvite(Regex("(\\[.*] )?(?<player>\\S{1,16}) has invited you to (?<duel>\\S+)!"), action={ _, result ->
         val player = result.groups["player"]?.value
         val duel = result.groups["duel"]?.value
@@ -99,6 +110,58 @@ enum class ChatRegex(val regex: Regex, val action: (message: Component, result: 
             val guildPattern = Regex("has invited you to join their guild, (.+)!")
             val match = guildPattern.find(fullText)
             return match?.groups?.get(1)?.value
+        }
+
+        /**
+         * Extracts the type (MM or Catacombs) and floor from a catacombs requeue message.
+         * Parses the hover event to find "MM The Catacombs" or "The Catacombs" and "Floor I" through "Floor VII"
+         *
+         * @param message The full message component
+         * @return A pair of (type, floor), or null if not found
+         */
+        private fun extractCatacombsInfo(message: Component): Pair<String, String>? {
+            val hoverText = extractHoverText(message)
+            if (hoverText != null) {
+                // Extract type (MM or Catacombs)
+                val type = if (hoverText.contains("MM The Catacombs")) {
+                    "MM"
+                } else if (hoverText.contains("The Catacombs")) {
+                    "Catacombs"
+                } else {
+                    return null
+                }
+
+                // Extract floor (Floor I through Floor VII)
+                val floorPattern = Regex("Floor (I{1,3}|IV|VI{0,2})")
+                val floorMatch = floorPattern.find(hoverText)
+                val floor = floorMatch?.value ?: return null
+
+                return Pair(type, floor)
+            }
+            return null
+        }
+
+        /**
+         * Recursively extracts hover text from a component tree.
+         *
+         * @param component The root component to traverse
+         * @return The concatenated hover text, or null if not found
+         */
+        private fun extractHoverText(component: Component): String? {
+            val style = component.style
+            val hoverEvent = style.hoverEvent as? HoverEvent.ShowText
+
+            if (hoverEvent != null) {
+                return ChatFormatting.stripFormatting(hoverEvent.value.string)
+            }
+
+            // Traverse siblings
+            for (sibling in component.siblings) {
+                val result = extractHoverText(sibling)
+                if (result != null) return result
+            }
+
+            return null
         }
     }
 }
