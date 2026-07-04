@@ -32,7 +32,12 @@ The project aims to provide a lightweight, intuitive way to interact with common
 * [ ] Sound effects
 * [ ] Special effects for contributors
 * [ ] Per-feature enable/disable
-* [ ] (API for other mods to integrate their own events)
+* [x] API for other mods to integrate their own events
+
+## API for developers
+
+The mod offers an API for you to include your own confirmation events. For more information about using it, see the `README.md` of the `api` directory on GitHub: [](api/README.md)
+https://github.com/dungeon-hub/prompt-overlay/blob/main/api/README.md
 
 ## Roadmap
 

@@ -1,4 +1,4 @@
-package net.dungeonhub.promptoverlay.render
+package net.dungeonhub.promptoverlay.api.render
 
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor

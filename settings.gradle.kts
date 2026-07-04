@@ -9,3 +9,5 @@ pluginManagement {
 }
 
 rootProject.name = "prompt-overlay"
+
+include(":api")

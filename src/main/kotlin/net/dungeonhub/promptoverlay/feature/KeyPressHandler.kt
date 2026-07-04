@@ -1,7 +1,7 @@
 package net.dungeonhub.promptoverlay.feature
 
-import net.dungeonhub.promptoverlay.render.AcceptableOverlay
-import net.dungeonhub.promptoverlay.render.DeniableOverlay
+import net.dungeonhub.promptoverlay.api.render.AcceptableOverlay
+import net.dungeonhub.promptoverlay.api.render.DeniableOverlay
 import net.dungeonhub.promptoverlay.enums.RemoveType
 
 object KeyPressHandler {

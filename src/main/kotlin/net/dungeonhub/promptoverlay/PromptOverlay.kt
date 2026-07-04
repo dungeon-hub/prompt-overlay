@@ -2,6 +2,8 @@ package net.dungeonhub.promptoverlay
 
 import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigScreen
 import com.teamresourceful.resourcefulconfig.api.loader.Configurator
+import net.dungeonhub.promptoverlay.api.OverlayHandler
+import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.Config
 import net.dungeonhub.promptoverlay.feature.ChatHandler
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
@@ -13,7 +15,7 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 
-object PromptOverlay : ClientModInitializer {
+object PromptOverlay : ClientModInitializer, OverlayHandler {
     const val MOD_ID = "prompt-overlay"
 
     lateinit var version: String
@@ -56,5 +58,8 @@ object PromptOverlay : ClientModInitializer {
         KeyMappingService.init()
         OverlayFeature.init()
         ChatHandler.init()
+        PromptOverlayApi.registerOverlayHandler(this)
     }
+
+    override fun setOverlay(overlay: Overlay) = OverlayFeature.setOverlay(overlay)
 }

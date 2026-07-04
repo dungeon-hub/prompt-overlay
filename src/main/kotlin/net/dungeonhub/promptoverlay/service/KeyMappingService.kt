@@ -2,6 +2,8 @@ package net.dungeonhub.promptoverlay.service
 
 import com.mojang.blaze3d.platform.InputConstants
 import net.dungeonhub.promptoverlay.PromptOverlay
+import net.dungeonhub.promptoverlay.PromptOverlayApi
+import net.dungeonhub.promptoverlay.api.KeyMappingProvider
 import net.dungeonhub.promptoverlay.feature.KeyPressHandler
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
@@ -10,7 +12,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.resources.Identifier
 import org.lwjgl.glfw.GLFW
 
-object KeyMappingService {
+object KeyMappingService : KeyMappingProvider {
     private val category = KeyMapping.Category(Identifier.fromNamespaceAndPath(PromptOverlay.MOD_ID, "keybinds"))
 
     private val heldKeys = mutableMapOf<String, Boolean>()
@@ -21,6 +23,7 @@ object KeyMappingService {
         GLFW.GLFW_KEY_Z,
         category
     )
+    override val acceptKeyName: String get() = acceptKey.translatedKeyMessage.string
 
     val denyKey = KeyMapping(
         "key.prompt-overlay.deny",
@@ -28,6 +31,7 @@ object KeyMappingService {
         GLFW.GLFW_KEY_N,
         category
     )
+    override val denyKeyName: String get() = denyKey.translatedKeyMessage.string
 
     val dismissKey = KeyMapping(
         "key.prompt-overlay.dismiss",
@@ -35,6 +39,7 @@ object KeyMappingService {
         GLFW.GLFW_KEY_X,
         category
     )
+    override val dismissKeyName: String get() = dismissKey.translatedKeyMessage.string
 
     fun init() {
         KeyMappingHelper.registerKeyMapping(acceptKey)
@@ -42,6 +47,8 @@ object KeyMappingService {
         KeyMappingHelper.registerKeyMapping(dismissKey)
 
         initListeners()
+
+        PromptOverlayApi.registerKeyMappingProvider(this)
     }
 
     private fun initListeners() {

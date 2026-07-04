@@ -1,8 +1,8 @@
 package net.dungeonhub.promptoverlay.overlays
 
+import net.dungeonhub.promptoverlay.api.render.AcceptableOverlay
+import net.dungeonhub.promptoverlay.api.render.OneActionOverlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
-import net.dungeonhub.promptoverlay.render.AcceptableOverlay
-import net.dungeonhub.promptoverlay.render.OneActionOverlay
 import net.dungeonhub.promptoverlay.service.KeyMappingService
 import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft

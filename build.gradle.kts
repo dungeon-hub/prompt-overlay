@@ -66,6 +66,11 @@ dependencies {
         isTransitive = false
     }
 
+    implementation(project(":api"))
+    shadow(project(":api")) {
+        isTransitive = false
+    }
+
     runtimeOnly("me.djtheredstoner:DevAuth-fabric:1.2.2")
 
     //Testing
@@ -127,6 +132,7 @@ tasks.shadowJar {
     exclude("org/jetbrains/annotations/**")
     exclude("org/intellij/**")
     exclude("com/google/errorprone/**")
+    exclude("org/slf4j/**")
 
     // Relocate ALL other dependencies to avoid conflicts
     relocate("com.squareup.moshi", "net.dungeonhub.promptoverlay.libs.moshi")
@@ -140,7 +146,6 @@ tasks.shadowJar {
     relocate("jakarta", "net.dungeonhub.promptoverlay.libs.jakarta")
     relocate("org.apache.commons", "net.dungeonhub.promptoverlay.libs.apache.commons")
     relocate("org.yaml.snakeyaml", "net.dungeonhub.promptoverlay.libs.snakeyaml")
-    relocate("org.slf4j", "net.dungeonhub.promptoverlay.libs.slf4j")
     relocate("io.github.oshai.kotlinlogging", "net.dungeonhub.promptoverlay.libs.kotlinlogging")
     relocate("com.teamresourceful.resourcefulconfigkt", "net.dungeonhub.promptoverlay.libs.resourcefulconfigkt")
 

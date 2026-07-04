@@ -8,8 +8,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import net.dungeonhub.promptoverlay.PromptOverlay
+import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
-import net.dungeonhub.promptoverlay.render.Overlay
 import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements

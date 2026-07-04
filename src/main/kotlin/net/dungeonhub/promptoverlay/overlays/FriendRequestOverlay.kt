@@ -1,9 +1,9 @@
 package net.dungeonhub.promptoverlay.overlays
 
+import net.dungeonhub.promptoverlay.api.render.AcceptableOverlay
+import net.dungeonhub.promptoverlay.api.render.DeniableOverlay
+import net.dungeonhub.promptoverlay.api.render.TwoActionsOverlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
-import net.dungeonhub.promptoverlay.render.AcceptableOverlay
-import net.dungeonhub.promptoverlay.render.DeniableOverlay
-import net.dungeonhub.promptoverlay.render.TwoActionsOverlay
 import net.dungeonhub.promptoverlay.service.KeyMappingService
 import net.minecraft.client.Minecraft
 import java.awt.Color

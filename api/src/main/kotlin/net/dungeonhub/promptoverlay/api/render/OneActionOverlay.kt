@@ -1,6 +1,6 @@
-package net.dungeonhub.promptoverlay.render
+package net.dungeonhub.promptoverlay.api.render
 
-import net.dungeonhub.promptoverlay.service.KeyMappingService
+import net.dungeonhub.promptoverlay.PromptOverlayApi
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -13,7 +13,7 @@ interface OneActionOverlay : Overlay {
     }
 
     override fun getActionsWidth(font: Font): Int {
-        val dismissKeyName = KeyMappingService.dismissKey.translatedKeyMessage.string
+        val dismissKeyName = PromptOverlayApi.getKeyMappingProvider().dismissKeyName
         val dismissText = "[$dismissKeyName] Dismiss"
         return font.width(firstText) + font.width(dismissText) + 20 // 20px spacing
     }
@@ -21,7 +21,7 @@ interface OneActionOverlay : Overlay {
     override fun renderActions(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int) {
         val font = Minecraft.getInstance().font
 
-        val dismissKeyName = KeyMappingService.dismissKey.translatedKeyMessage.string
+        val dismissKeyName = PromptOverlayApi.getKeyMappingProvider().dismissKeyName
         val dismissText = "[$dismissKeyName] Dismiss"
 
         val textColor = 0xFFFFFFFF.toInt()
