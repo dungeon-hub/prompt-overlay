@@ -10,24 +10,26 @@ The project aims to provide a lightweight, intuitive way to interact with common
 
 * [x] Friend requests
 * [x] Party invites
-* [ ] Guild invites
+* [x] Guild invites
 * [x] SkyBlock trade requests
-* [ ] Duel requests
+* [x] Duel requests
 * [x] Trophy Fish GG prompt
 * [ ] Auto requeue into a dungeon
+* [ ] Announce rare drops in guild/party/public chat
 
 ### Dialogs
 
 * [ ] SkyBlock NPC dialogs
-* [ ] Confirmation dialogs
+* [x] Confirmation dialogs
 * [ ] Multi-choice dialogs
 
 ### General
 
 * [x] Configurable keybinds
+* [x] Configurable colors
 * [ ] Configurable appearance
 * [ ] Animations
-* [ ] (Sound effects)
+* [ ] Sound effects
 * [ ] Special effects for contributors
 * [ ] Per-feature enable/disable
 * [ ] (API for other mods to integrate their own events)

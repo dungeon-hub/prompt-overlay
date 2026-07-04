@@ -7,15 +7,15 @@ import net.dungeonhub.promptoverlay.service.KeyMappingService
 import net.minecraft.client.Minecraft
 import java.awt.Color
 
-class GuildRequestOverlay(val inviter: String, guildName: String?) : AcceptableOverlay, OneActionOverlay {
+class DuelInviteOverlay(val player: String, duel: String): AcceptableOverlay, OneActionOverlay {
     override fun accept() {
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand("guild accept $inviter")
+            Minecraft.getInstance().player?.connection?.sendCommand("duel accept $player")
         }
     }
 
-    override val borderColor: Color = Color(OverlayCategory.guildColor)
-    override val message: String = "$inviter invited you into their guild${if (guildName != null) " $guildName" else ""}"
+    override val borderColor: Color get() = Color(OverlayCategory.duelColor)
+    override val message: String = "$player invited you to $duel"
 
     override val firstText: String
         get() {

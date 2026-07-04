@@ -1,7 +1,9 @@
 package net.dungeonhub.promptoverlay.enums
 
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
+import net.dungeonhub.promptoverlay.overlays.DuelInviteOverlay
 import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
+import net.dungeonhub.promptoverlay.overlays.GuildRequestOverlay
 import net.dungeonhub.promptoverlay.overlays.PartyInviteOverlay
 import net.dungeonhub.promptoverlay.overlays.SkyblockTradeOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
@@ -10,10 +12,26 @@ import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 
 enum class ChatRegex(val regex: Regex, val action: (message: Component, result: MatchResult) -> Unit) {
+    DuelInvite(Regex("(\\[.*] )?(?<player>\\S{1,16}) has invited you to (?<duel>\\S+)!"), action={ _, result ->
+        val player = result.groups["player"]?.value
+        val duel = result.groups["duel"]?.value
+
+        if(player != null && duel != null) OverlayFeature.setOverlay(DuelInviteOverlay(player, duel))
+    }),
     FriendRequest(Regex("Friend request from ((?<rank>\\[.+] )?(?<player>\\S{1,16})).*"), action={ _, result ->
         val player = result.groups["player"]?.value
 
         if(player != null) OverlayFeature.setOverlay(FriendRequestOverlay(player))
+    }),
+    GuildInvite(Regex("Click here to accept or type (?<command>/guild accept (?<name>\\w+))!"), action={ message, result ->
+        val inviter = result.groups["name"]?.value
+
+        // Optionally extract guild name from the full message
+        val guildName = extractGuildName(message)
+
+        if(inviter != null) {
+            OverlayFeature.setOverlay(GuildRequestOverlay(inviter, guildName))
+        }
     }),
     PartyInvite(Regex("(?:\\[.*] )?(?<player>\\S{1,16}) has invited you to join (?:their|(?:\\[.*] ?)?\\w{1,16}'s)? party!"), action={ _, result ->
         val player = result.groups["player"]?.value
@@ -67,6 +85,20 @@ enum class ChatRegex(val regex: Regex, val action: (message: Component, result: 
             }
 
             return null
+        }
+
+        /**
+         * Extracts the guild name from a guild invite message.
+         * Looks for the pattern "has invited you to join their guild, <guildName>!"
+         *
+         * @param message The full message component
+         * @return The guild name, or null if not found
+         */
+        private fun extractGuildName(message: Component): String? {
+            val fullText = message.string
+            val guildPattern = Regex("has invited you to join their guild, (.+)!")
+            val match = guildPattern.find(fullText)
+            return match?.groups?.get(1)?.value
         }
     }
 }

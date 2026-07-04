@@ -21,6 +21,11 @@ object OverlayCategory : CategoryKt("$MOD_ID/overlay") {
         allowAlpha = true
     }
 
+    val duelColor by color("duel_color", Color.RED.rgb) {
+        name = Literal("Duel Color")
+        description = Literal("The color of the duel invite overlay.")
+    }
+
     val friendColor by color("friend_color", Color.PINK.rgb) {
         name = Literal("Friend Color")
         description = Literal("The color of the friend request overlay.")
