@@ -28,11 +28,13 @@ object ScheduleHandler {
 
     private fun launchDarkAuctionPrompt() {
         scheduler.launch {
-            delay(timeUntilDarkAuction() - 15.seconds)
+            delay(timeUntilDarkAuction() - FeaturesCategory.darkAuctionTime.seconds)
 
             if(Minecraft.getInstance().level != null && FeaturesCategory.showDarkAuctionWarp) {
                 OverlayFeature.setOverlay(DarkAuctionWarpOverlay())
             }
+
+            delay(FeaturesCategory.darkAuctionTime.seconds)
 
             launchDarkAuctionPrompt()
         }
