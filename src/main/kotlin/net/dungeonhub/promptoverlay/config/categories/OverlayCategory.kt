@@ -2,10 +2,9 @@ package net.dungeonhub.promptoverlay.config.categories
 
 import com.teamresourceful.resourcefulconfig.api.types.options.TranslatableValue
 import com.teamresourceful.resourcefulconfigkt.api.CategoryKt
-import net.dungeonhub.promptoverlay.PromptOverlay.MOD_ID
 import java.awt.Color
 
-object OverlayCategory : CategoryKt("$MOD_ID/overlay") {
+object OverlayCategory : CategoryKt("overlay") {
     override val name: TranslatableValue
         get() = Literal("Overlays")
 
