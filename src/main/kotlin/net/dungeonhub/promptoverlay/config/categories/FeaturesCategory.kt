@@ -38,7 +38,10 @@ object FeaturesCategory : CategoryKt("features") {
         renderer = Identifier.fromNamespaceAndPath(MOD_ID, "ignored_abiphone_contacts_renderer")
     }
 
-    val ignoredContacts get() = _ignoredContacts.split(";")
+    private fun parseContacts(raw: String): List<String> = raw.split(";").filter { it.isNotEmpty() }
+    private fun joinContacts(contacts: List<String?>): String = contacts.filterNotNull().joinToString(";")
+
+    val ignoredContacts get() = parseContacts(_ignoredContacts)
 
     init {
         ResourcefulConfigUI.registerElementRenderer(Identifier.fromNamespaceAndPath(MOD_ID, "ignored_abiphone_contacts_renderer"), { IgnoredAbiphoneContactsRenderer(it) })
@@ -62,12 +65,12 @@ object FeaturesCategory : CategoryKt("features") {
                     },
                     {
                         ((element as? ResourcefulConfigEntryElement)?.entry() as? ResourcefulConfigValueEntry)?.let { value ->
-                            value.string.split(";".toRegex()).dropLastWhile { it.isEmpty() }
+                            parseContacts(value.string)
                         } ?: mutableListOf<String?>()
                     },
                     { v ->
                         ((element as? ResourcefulConfigEntryElement)?.entry() as? ResourcefulConfigValueEntry)?.let { value ->
-                            value.string = v.joinToString(";")
+                            value.string = joinContacts(v)
                         }
                     }
                 )
