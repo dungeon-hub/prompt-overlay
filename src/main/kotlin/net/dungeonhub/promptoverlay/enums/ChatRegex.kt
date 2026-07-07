@@ -1,5 +1,6 @@
 package net.dungeonhub.promptoverlay.enums
 
+import net.dungeonhub.promptoverlay.config.categories.FeaturesCategory
 import net.dungeonhub.promptoverlay.feature.ChatHandler
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
 import net.dungeonhub.promptoverlay.overlays.AbiphoneCallOverlay
@@ -21,7 +22,15 @@ enum class ChatRegex(val regex: Regex, val action: (message: Component, result: 
         val command = findClickCommand(message) { it.contains("[PICK UP]") }
         val caller = extractAbiphoneCaller()?.let(this::formatMessageWithColor)
 
-        if(command != null) {
+        if(caller != null) {
+            if(!FeaturesCategory.allSeenAbiphoneContacts.contains(caller)) {
+                val newSeen = FeaturesCategory.allSeenAbiphoneContacts.toMutableList()
+                newSeen += caller
+                FeaturesCategory.allSeenAbiphoneContacts = newSeen.toTypedArray()
+            }
+        }
+
+        if(command != null && !FeaturesCategory.ignoredContacts.contains(caller)) {
             OverlayFeature.setOverlay(AbiphoneCallOverlay(caller, command))
         }
     }),
