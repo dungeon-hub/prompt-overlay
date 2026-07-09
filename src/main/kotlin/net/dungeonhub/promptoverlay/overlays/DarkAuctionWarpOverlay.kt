@@ -4,6 +4,7 @@ import net.dungeonhub.promptoverlay.api.render.AcceptableOverlay
 import net.dungeonhub.promptoverlay.api.render.OneActionOverlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
 import java.awt.Color
 
 class DarkAuctionWarpOverlay : AcceptableOverlay, OneActionOverlay {
@@ -14,6 +15,6 @@ class DarkAuctionWarpOverlay : AcceptableOverlay, OneActionOverlay {
     }
 
     override val borderColor get() = Color(OverlayCategory.darkAuctionColor)
-    override val message get() = "The Dark Auction starts in 15 seconds"
+    override val message get() = Component.literal("The Dark Auction starts in 15 seconds")
     override val firstText get() = "[${acceptKey()}] Warp"
 }
