@@ -1,6 +1,5 @@
 package net.dungeonhub.promptoverlay.enums
 
-import com.teamresourceful.resourcefulconfig.api.annotations.ConfigObject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.dungeonhub.promptoverlay.config.categories.FeaturesCategory
@@ -30,7 +29,6 @@ import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
-@ConfigObject
 enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, val action: (message: Component, result: MatchResult) -> Unit) {
     AbiphoneCall(Regex("✆ RING... RING... RING..."), FeaturesToggle::abiphoneCalls, action={ message, _ ->
         val command = findClickCommand(message) { it.contains("[PICK UP]") }
@@ -114,7 +112,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         OverlayFeature.setOverlay(TrapperHuntOverlay(acceptCommand, denyCommand))
     }),
-    TrapperRestart(Regex("Killing the animal rewarded you \\d+ pelts"), FeaturesToggle::trapperHunt, action=action@{ _, _ ->
+    TrapperRestart(Regex("^Killing the animal rewarded you \\d+ pelts"), FeaturesToggle::trapperHunt, action=action@{ _, _ ->
         val cooldown = 20.seconds - (Clock.System.now() - (lastTrapperQuest ?: Clock.System.now()))
 
         ScheduleHandler.scheduler.launch {
