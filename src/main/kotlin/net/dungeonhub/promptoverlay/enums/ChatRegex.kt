@@ -107,15 +107,27 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         OverlayFeature.setOverlay(SkyblockTradeOverlay(player, acceptCommand))
     }),
     TrapperHunt(Regex("Accept the trapper's task to hunt the animal?"), FeaturesToggle::trapperHunt, action=action@{ message, _ ->
+        lastTrapperQuest = Clock.System.now()
 
         val acceptCommand = findClickCommand(message) { it.contains("[YES]") } ?: return@action
         val denyCommand = findClickCommand(message) { it.contains("[NO]") } ?: return@action
 
         OverlayFeature.setOverlay(TrapperHuntOverlay(acceptCommand, denyCommand))
     }),
+    TrapperRestart(Regex("Killing the animal rewarded you \\d+ pelts"), FeaturesToggle::trapperHunt, action=action@{ _, _ ->
+        val cooldown = 20.seconds - (Clock.System.now() - (lastTrapperQuest ?: Clock.System.now()))
+
+        ScheduleHandler.scheduler.launch {
+            delay(cooldown)
+
+            OverlayFeature.setOverlay(TrapperRestartOverlay())
+        }
+    }),
     TrophyFishGg(Regex("§6§lCLICK HERE §eto say §6gg§e!"), FeaturesToggle::trophyFishGg, action={ _, _ -> OverlayFeature.setOverlay(TrophyFishGgOverlay()) });
 
     companion object {
+        var lastTrapperQuest: Instant? = null
+
         private fun findComponent(component: Component, predicate: (Component) -> Boolean): Component? {
             if(predicate(component)) return component
 

@@ -21,7 +21,7 @@ object ScheduleHandler {
     private val supervisor = SupervisorJob()
     private val dispatcher = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
 
-    private val scheduler = CoroutineScope(supervisor + dispatcher)
+    val scheduler = CoroutineScope(supervisor + dispatcher)
 
     fun init() {
         launchDarkAuctionPrompt()
