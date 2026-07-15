@@ -140,7 +140,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
     TrophyFishGg(Regex("§6§lCLICK HERE §eto say §6gg§e!"), FeaturesToggle::trophyFishGg, action={ _, _ -> OverlayFeature.setOverlay(TrophyFishGgOverlay()) });
 
     companion object {
-        private val logger = LoggerFactory.getLogger(PartyCommandOverlay::class.java)
+        private val logger = LoggerFactory.getLogger(ChatRegex::class.java)
 
         var lastTrapperQuest: Instant? = null
 
