@@ -1,0 +1,39 @@
+# See https://stonecutter.kikugie.dev/wiki/config/properties#centralized-properties
+mod.id = "prompt-overlay"
+mod.name = "Prompt Overlay"
+mod.group = "net.dungeon-hub"
+mod.version = "0.3.1"
+
+api.id = "prompt-overlay-api"
+api.version = "0.1.0"
+
+# Shared across every targeted Minecraft version.
+deps.fabric_loader = "0.19.3"
+deps.fabric_language_kotlin = "1.13.11+kotlin.2.3.21"
+
+["1.21.11"]
+# Last release before Minecraft dropped obfuscation - still needs Mojang mappings applied.
+deps.fabric_api = "0.141.5+1.21.11"
+deps.resourcefulconfig = "3.11.3"
+# resourcefulconfig-fabric-<this> - Team Resourceful publishes one artifact per exact patch here.
+deps.resourcefulconfig_artifact = "1.21.11"
+# The 26.1-targeted resourcefulconfigkt jar is compiled for Java 25 and can't be used on this Java 21
+# target, but its API is byte-identical - this is the equivalent build for the 1.21.x era.
+deps.resourcefulconfigkt_artifact = "resourcefulconfigkt-fabric-1.21.11"
+deps.resourcefulconfigkt = "3.11.0"
+
+["26.1.2"]
+deps.fabric_api = "0.149.1+26.1.2"
+deps.resourcefulconfig = "4.0.1"
+# Team Resourceful only publishes this one grouped by minor version, not patch.
+deps.resourcefulconfig_artifact = "26.1"
+deps.resourcefulconfigkt_artifact = "resourcefulconfigkt-26.1-rc-1"
+deps.resourcefulconfigkt = "4.0.0-beta.1"
+
+["26.2"]
+deps.fabric_api = "0.155.2+26.2"
+deps.resourcefulconfig = "5.0.0"
+deps.resourcefulconfig_artifact = "26.2"
+# Same jar as 26.1.2 - resourcefulconfigkt has no Minecraft-version-specific code, only Java level matters.
+deps.resourcefulconfigkt_artifact = "resourcefulconfigkt-26.1-rc-1"
+deps.resourcefulconfigkt = "4.0.0-beta.1"

@@ -2,7 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "net.dungeonhub.promptoverlay.mixin",
-  "compatibilityLevel": "JAVA_25",
+  "compatibilityLevel": "${java_compatibility_level}",
   "client": [
   ],
   "injectors": {

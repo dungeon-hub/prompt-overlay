@@ -19,3 +19,8 @@ hs_err_pid*
 
 # Common working directory
 run
+
+# Stonecutter per-version projects and generated/preprocessed sources
+versions/
+generated/
+stonecutter-cache/
