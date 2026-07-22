@@ -1,11 +1,11 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-// Used for every unobfuscated target (26.1+). See build-obfuscated.gradle.kts for 1.21.11.
+// Used only for 1.21.11 - the last Minecraft release before obfuscation was dropped (26.1+ uses build.gradle.kts).
 plugins {
     kotlin("jvm") version "2.3.21"
     kotlin("plugin.serialization") version "2.3.21"
-    id("net.fabricmc.fabric-loom") version "1.17-SNAPSHOT"
+    id("net.fabricmc.fabric-loom-remap") version "1.17-SNAPSHOT"
     id("com.gradleup.shadow") version "9.4.2"
     id("maven-publish")
 }
@@ -17,7 +17,7 @@ base {
     archivesName.set(property("mod.id") as String)
 }
 
-val targetJavaVersion = 25
+val targetJavaVersion = 21
 
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(targetJavaVersion)
@@ -72,15 +72,17 @@ fun dep(key: String): String = sc.properties["deps.$key"] as String
 
 dependencies {
     minecraft("com.mojang:minecraft:${sc.current.version}")
-    // No mappings needed - Minecraft ships unobfuscated from 26.1 onward.
+    mappings(loom.officialMojangMappings())
 
-    implementation("net.fabricmc:fabric-loader:${dep("fabric_loader")}")
-    implementation("net.fabricmc:fabric-language-kotlin:${dep("fabric_language_kotlin")}")
-    implementation("net.fabricmc.fabric-api:fabric-api:${dep("fabric_api")}")
+    modImplementation("net.fabricmc:fabric-loader:${dep("fabric_loader")}")
+    modImplementation("net.fabricmc:fabric-language-kotlin:${dep("fabric_language_kotlin")}")
+    modImplementation("net.fabricmc.fabric-api:fabric-api:${dep("fabric_api")}")
 
-    implementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-${dep("resourcefulconfig_artifact")}:${dep("resourcefulconfig")}")
+    // Published against intermediary like any other Fabric mod jar, so this needs remapping too.
+    modImplementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-${dep("resourcefulconfig_artifact")}:${dep("resourcefulconfig")}")
+    // Also references Identifier (see TypeBuilders.kt's renderer property), so it needs remapping too.
     val resourcefulConfigKt = "com.teamresourceful.resourcefulconfigkt:${dep("resourcefulconfigkt_artifact")}:${dep("resourcefulconfigkt")}"
-    implementation(resourcefulConfigKt)
+    modImplementation(resourcefulConfigKt)
     shadow(resourcefulConfigKt) { // TODO just use the dependency on the mod once (if) it becomes available on Modrinth
         isTransitive = false
     }
@@ -179,17 +181,26 @@ tasks.shadowJar {
         rename { "${it}_${project.base.archivesName.get()}" }
     }
 
-    archiveClassifier = sc.current.version
+    // remapJar below does the final classifier + remap pass; this is just its (intermediary-named) input.
+    archiveClassifier = "dev"
 }
 
-// Make jar task depend on shadowJar
+// Disable the regular jar task, use shadow jar (remapped below) instead.
 tasks.jar {
     dependsOn(tasks.shadowJar)
-    enabled = false // Disable regular jar, use shadow jar instead
+    enabled = false
+}
+
+// Unlike the unobfuscated build, 1.21.11 still needs a remap pass from intermediary to Mojang mappings,
+// so shadowJar's output ("dev" jar above) has to go through remapJar to produce the final artifact.
+tasks.remapJar {
+    dependsOn(tasks.shadowJar)
+    inputFile.set(tasks.shadowJar.flatMap { it.archiveFile })
+    archiveClassifier.set(sc.current.version)
 }
 
 tasks.build {
-    dependsOn(tasks.shadowJar)
+    dependsOn(tasks.remapJar)
 }
 
 val apiId = property("api.id") as String
@@ -233,11 +244,6 @@ publishing {
         }
     }
 
-    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
     repositories {
-        // Add repositories to publish to here.
-        // Notice: This block does NOT have the same function as the block in the top level.
-        // The repositories here will be used for publishing your artifact, not for
-        // retrieving dependencies.
     }
 }
