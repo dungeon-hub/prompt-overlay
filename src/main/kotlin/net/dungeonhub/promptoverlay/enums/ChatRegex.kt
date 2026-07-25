@@ -10,13 +10,16 @@ import net.dungeonhub.promptoverlay.feature.ScheduleHandler
 import net.dungeonhub.promptoverlay.overlays.AbiphoneCallOverlay
 import net.dungeonhub.promptoverlay.overlays.CatacombsRequeueOverlay
 import net.dungeonhub.promptoverlay.overlays.DuelInviteOverlay
+import net.dungeonhub.promptoverlay.overlays.FiveOptionsSelectOverlay
+import net.dungeonhub.promptoverlay.overlays.FourOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
 import net.dungeonhub.promptoverlay.overlays.GuildRequestOverlay
-import net.dungeonhub.promptoverlay.overlays.OptionSelectOverlay
+import net.dungeonhub.promptoverlay.overlays.TwoOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.PartyCommandOverlay
 import net.dungeonhub.promptoverlay.overlays.PartyInviteOverlay
 import net.dungeonhub.promptoverlay.overlays.SingleOptionSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.SkyblockTradeOverlay
+import net.dungeonhub.promptoverlay.overlays.ThreeOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperRestartOverlay
 import net.dungeonhub.promptoverlay.overlays.TrophyFishGgOverlay
@@ -85,15 +88,72 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         if(responses.size != texts.size || responses.size != commands.size) return@action
 
-        if(responses.size == 2) { // TODO support more than two
-            if(ChatFormatting.stripFormatting(texts[0]) == "Yes" && ChatFormatting.stripFormatting(texts[1]) == "No" && isHoppityOptionAccept()) {
-                // This is the hoppity call
-                OverlayFeature.setOverlay(OptionSelectOverlay(texts[0], commands[0], texts[1], commands[1], "Accept Hoppity's Chocolate Rabbit?"))
-            } else {
-                OverlayFeature.setOverlay(OptionSelectOverlay(texts[0], commands[0], texts[1], commands[1]))
+        when(responses.size) {
+            1 -> {
+                OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0]))
             }
-        } else if(responses.size == 1) {
-            OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0]))
+
+            2 -> {
+                if (ChatFormatting.stripFormatting(texts[0]) == "Yes" && ChatFormatting.stripFormatting(texts[1]) == "No" && isHoppityOptionAccept()) {
+                    // This is the hoppity call
+                    OverlayFeature.setOverlay(
+                        TwoOptionsSelectOverlay(
+                            texts[0],
+                            commands[0],
+                            texts[1],
+                            commands[1],
+                            "Accept Hoppity's Chocolate Rabbit?"
+                        )
+                    )
+                } else {
+                    OverlayFeature.setOverlay(TwoOptionsSelectOverlay(texts[0], commands[0], texts[1], commands[1]))
+                }
+            }
+
+            3 -> {
+                OverlayFeature.setOverlay(
+                    ThreeOptionsSelectOverlay(
+                        texts[0],
+                        commands[0],
+                        texts[1],
+                        commands[1],
+                        texts[2],
+                        commands[2]
+                    )
+                )
+            }
+
+            4 -> {
+                OverlayFeature.setOverlay(
+                    FourOptionsSelectOverlay(
+                        texts[0],
+                        commands[0],
+                        texts[1],
+                        commands[1],
+                        texts[2],
+                        commands[2],
+                        texts[3],
+                        commands[3]
+                    )
+                )
+            }
+
+            5 -> {
+                OverlayFeature.setOverlay(
+                    FiveOptionsSelectOverlay(
+                        texts[0],
+                        commands[0],
+                        texts[1],
+                        commands[1],
+                        texts[2],
+                        commands[2],
+                        texts[3],
+                        commands[3],
+                        texts[4],
+                        commands[4]
+                    )
+                )
+            }
         }
     }),
     PartyCommand(Regex("§9Party §8> §.(\\[.*] )?(?<player>\\w{1,16})§.: !(?<command>\\S+)$"), FeaturesToggle::partyCommands, action=action@{ _, result ->
