@@ -4,7 +4,9 @@ import net.dungeonhub.promptoverlay.api.render.AcceptableOverlay
 import net.dungeonhub.promptoverlay.api.render.DeniableOverlay
 import net.dungeonhub.promptoverlay.api.render.FiveActionsOverlay
 import net.dungeonhub.promptoverlay.api.render.FourActionsOverlay
+import net.dungeonhub.promptoverlay.api.render.OneOptionOverlay
 import net.dungeonhub.promptoverlay.api.render.ThreeActionsOverlay
+import net.dungeonhub.promptoverlay.api.render.TwoOptionsOverlay
 import net.dungeonhub.promptoverlay.enums.RemoveType
 
 object KeyPressHandler {
@@ -39,7 +41,7 @@ object KeyPressHandler {
     }
 
     fun handleFirstOption(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay as? ThreeActionsOverlay ?: return false
+        val currentOverlay = OverlayFeature.currentOverlay as? OneOptionOverlay ?: return false
 
         currentOverlay.firstOption()
 
@@ -49,7 +51,7 @@ object KeyPressHandler {
     }
 
     fun handleSecondOption(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay as? ThreeActionsOverlay ?: return false
+        val currentOverlay = OverlayFeature.currentOverlay as? TwoOptionsOverlay ?: return false
 
         currentOverlay.secondOption()
 
