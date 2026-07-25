@@ -1,42 +1,42 @@
 package net.dungeonhub.promptoverlay.overlays
 
-import net.dungeonhub.promptoverlay.api.render.AcceptableOverlay
-import net.dungeonhub.promptoverlay.api.render.DeniableOverlay
-import net.dungeonhub.promptoverlay.api.render.TwoActionsOverlay
+import net.dungeonhub.promptoverlay.api.render.ThreeActionsOverlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.awt.Color
 
-class OptionSelectOverlay(
-    val firstOption: String,
+class ThreeOptionsSelectOverlay(
+    firstOption: String,
     val firstCommand: String,
-    val secondOption: String,
+    secondOption: String,
     val secondCommand: String,
+    thirdOption: String,
+    val thirdCommand: String,
     messageOverride: String? = null
-): AcceptableOverlay, DeniableOverlay, TwoActionsOverlay {
+) : ThreeActionsOverlay {
+    override val firstText = "[${firstOptionKey()}] $firstOption"
+    override val secondText = "[${secondOptionKey()}] $secondOption"
+    override val thirdText = "[${thirdOptionKey()}] $thirdOption"
+
     override val borderColor: Color = Color(OverlayCategory.optionSelectColor)
     override val message = Component.literal(messageOverride ?: "Select an option")
 
-    override fun accept() {
+    override fun firstOption() {
         Minecraft.getInstance().execute {
             Minecraft.getInstance().player?.connection?.sendCommand(firstCommand)
         }
     }
 
-    override fun deny() {
+    override fun secondOption() {
         Minecraft.getInstance().execute {
             Minecraft.getInstance().player?.connection?.sendCommand(secondCommand)
         }
     }
 
-    override val firstText: String
-        get() {
-            return "[${acceptKey()}] $firstOption" // TODO also support buttons 1-9 for conversations
+    override fun thirdOption() {
+        Minecraft.getInstance().execute {
+            Minecraft.getInstance().player?.connection?.sendCommand(thirdCommand)
         }
-
-    override val secondText: String
-        get() {
-            return "[${denyKey()}] $secondOption" // TODO also support buttons 1-9 for conversations
-        }
+    }
 }
