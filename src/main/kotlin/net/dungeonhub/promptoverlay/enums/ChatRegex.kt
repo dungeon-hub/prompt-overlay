@@ -202,6 +202,11 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
     companion object {
         private val logger = LoggerFactory.getLogger(ChatRegex::class.java)
 
+        val floorPattern = Regex("Floor (I{1,3}|IV|VI{0,2})$")
+        val abiphoneCallerPattern = Regex("✆ (.+) (§e)?✆")
+        val hoppityCallPattern = Regex("\\[NPC] Hoppity: ✆ I just got a new Chocolate Rabbit and was wondering if you wanted to buy it\\.")
+        val guildInvitePattern = Regex("has invited you to join their guild, (.+)!")
+
         var lastTrapperQuest: Instant? = null
 
         private fun findComponent(component: Component, predicate: (Component) -> Boolean): Component? {
@@ -217,9 +222,8 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         }
 
         private fun isHoppityOptionAccept(): Boolean {
-            val callerPattern = Regex("\\[NPC] Hoppity: ✆ I just got a new Chocolate Rabbit and was wondering if you wanted to buy it\\.")
             return ChatHandler.findInHistory(5) { message ->
-                callerPattern.containsMatchIn(ChatFormatting.stripFormatting(message) ?: "")
+                hoppityCallPattern.containsMatchIn(ChatFormatting.stripFormatting(message) ?: "")
             } != null
         }
 
@@ -262,8 +266,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
          */
         private fun extractGuildName(message: Component): String? {
             val fullText = message.string
-            val guildPattern = Regex("has invited you to join their guild, (.+)!")
-            val match = guildPattern.find(fullText)
+            val match = guildInvitePattern.find(fullText)
             return match?.groups?.get(1)?.value
         }
 
@@ -287,7 +290,6 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 }
 
                 // Extract floor (Floor I through Floor VII)
-                val floorPattern = Regex("Floor (I{1,3}|IV|VI{0,2})")
                 val floorMatch = floorPattern.find(hoverText)
                 val floor = floorMatch?.value ?: return null
 
@@ -326,9 +328,8 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
          * @return The caller's name, or null if not found
          */
         private fun extractAbiphoneCaller(): Component? {
-            val callerPattern = Regex("✆ (.+) (§e)?✆")
             val recentMessage = ChatHandler.findInHistory(25) { message ->
-                callerPattern.containsMatchIn(message)
+                abiphoneCallerPattern.containsMatchIn(message)
             } ?: return null
 
             val siblings = recentMessage.siblings.filter { it.siblings.isEmpty() }
@@ -338,7 +339,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
             return callerName?.let {
                 Component.literal(it.string.replace("✆", "").trim()).withStyle(callerName.style)
             } ?: recentMessage.let { msg ->
-                callerPattern.find(msg.string)?.groups?.get(1)?.value?.let(Component::literal)
+                abiphoneCallerPattern.find(msg.string)?.groups?.get(1)?.value?.let(Component::literal)
             }
         }
 
