@@ -23,4 +23,29 @@ interface KeyMappingProvider {
      * Used in overlay action text like "[X] Dismiss".
      */
     val dismissKeyName: String
+
+    /**
+     * Returns the translated/localized name of the first option key.
+     */
+    val firstOptionKeyName: String
+
+    /**
+     * Returns the translated/localized name of the second option key.
+     */
+    val secondOptionKeyName: String
+
+    /**
+     * Returns the translated/localized name of the third option key.
+     */
+    val thirdOptionKeyName: String
+
+    /**
+     * Returns the translated/localized name of the fourth option key.
+     */
+    val fourthOptionKeyName: String
+
+    /**
+     * Returns the translated/localized name of the fifth option key.
+     */
+    val fifthOptionKeyName: String
 }

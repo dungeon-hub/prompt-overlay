@@ -9,7 +9,8 @@ interface OneActionOverlay : Overlay {
     val firstText: String
 
     override fun getActionsHeight(width: Int): Int {
-        return Minecraft.getInstance().font.lineHeight + 4
+        val font = Minecraft.getInstance().font
+        return font.lineHeight + 4
     }
 
     override fun getActionsWidth(font: Font): Int {

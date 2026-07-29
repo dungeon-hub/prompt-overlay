@@ -73,15 +73,72 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         if(responses.size != texts.size || responses.size != commands.size) return@action
 
-        if(responses.size == 2) { // TODO support more than two
-            if(ChatFormatting.stripFormatting(texts[0]) == "Yes" && ChatFormatting.stripFormatting(texts[1]) == "No" && isHoppityOptionAccept()) {
-                // This is the hoppity call
-                OverlayFeature.setOverlay(OptionSelectOverlay(texts[0], commands[0], texts[1], commands[1], "Accept Hoppity's Chocolate Rabbit?"))
-            } else {
-                OverlayFeature.setOverlay(OptionSelectOverlay(texts[0], commands[0], texts[1], commands[1]))
+        when(responses.size) {
+            1 -> {
+                OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0]))
             }
-        } else if(responses.size == 1) {
-            OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0]))
+
+            2 -> {
+                if (ChatFormatting.stripFormatting(texts[0]) == "Yes" && ChatFormatting.stripFormatting(texts[1]) == "No" && isHoppityOptionAccept()) {
+                    // This is the hoppity call
+                    OverlayFeature.setOverlay(
+                        TwoOptionsSelectOverlay(
+                            texts[0],
+                            commands[0],
+                            texts[1],
+                            commands[1],
+                            "Accept Hoppity's Chocolate Rabbit?"
+                        )
+                    )
+                } else {
+                    OverlayFeature.setOverlay(TwoOptionsSelectOverlay(texts[0], commands[0], texts[1], commands[1]))
+                }
+            }
+
+            3 -> {
+                OverlayFeature.setOverlay(
+                    ThreeOptionsSelectOverlay(
+                        texts[0],
+                        commands[0],
+                        texts[1],
+                        commands[1],
+                        texts[2],
+                        commands[2]
+                    )
+                )
+            }
+
+            4 -> {
+                OverlayFeature.setOverlay(
+                    FourOptionsSelectOverlay(
+                        texts[0],
+                        commands[0],
+                        texts[1],
+                        commands[1],
+                        texts[2],
+                        commands[2],
+                        texts[3],
+                        commands[3]
+                    )
+                )
+            }
+
+            5 -> {
+                OverlayFeature.setOverlay(
+                    FiveOptionsSelectOverlay(
+                        texts[0],
+                        commands[0],
+                        texts[1],
+                        commands[1],
+                        texts[2],
+                        commands[2],
+                        texts[3],
+                        commands[3],
+                        texts[4],
+                        commands[4]
+                    )
+                )
+            }
         }
     }),
     PartyCommand(Regex("§9Party §8> §.(\\[.*] )?(?<player>\\w{1,16})§.: !(?<command>\\S+)$"), FeaturesToggle::partyCommands, action=action@{ _, result ->
@@ -91,7 +148,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val partyCommand = PartyCommandOverlay.PartyCommand.getCommand(command)
 
         if(partyCommand == null) {
-            logger.sendDebug("Unknown party command received, ignoring it: $command")
+            logger.sendDebug("[PO] Unknown party command received, ignoring it: $command")
             return@action
         }
 
@@ -133,6 +190,11 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
             sanitizeColorName(it.name)
         }
 
+        val floorPattern = Regex("Floor (I{1,3}|IV|VI{0,2})$")
+        val abiphoneCallerPattern = Regex("✆ (.+) (§e)?✆")
+        val hoppityCallPattern = Regex("\\[NPC] Hoppity: ✆ I just got a new Chocolate Rabbit and was wondering if you wanted to buy it\\.")
+        val guildInvitePattern = Regex("has invited you to join their guild, (.+)!")
+
         var lastTrapperQuest: Instant? = null
 
         private fun findComponent(component: Component, predicate: (Component) -> Boolean): Component? {
@@ -148,9 +210,8 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         }
 
         private fun isHoppityOptionAccept(): Boolean {
-            val callerPattern = Regex("\\[NPC] Hoppity: ✆ I just got a new Chocolate Rabbit and was wondering if you wanted to buy it\\.")
             return ChatHandler.findInHistory(5) { message ->
-                callerPattern.containsMatchIn(ChatFormatting.stripFormatting(message) ?: "")
+                hoppityCallPattern.containsMatchIn(ChatFormatting.stripFormatting(message) ?: "")
             } != null
         }
 
@@ -193,8 +254,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
          */
         private fun extractGuildName(message: Component): String? {
             val fullText = message.string
-            val guildPattern = Regex("has invited you to join their guild, (.+)!")
-            val match = guildPattern.find(fullText)
+            val match = guildInvitePattern.find(fullText)
             return match?.groups?.get(1)?.value
         }
 
@@ -218,7 +278,6 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 }
 
                 // Extract floor (Floor I through Floor VII)
-                val floorPattern = Regex("Floor (I{1,3}|IV|VI{0,2})")
                 val floorMatch = floorPattern.find(hoverText)
                 val floor = floorMatch?.value ?: return null
 
@@ -257,9 +316,8 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
          * @return The caller's name, or null if not found
          */
         private fun extractAbiphoneCaller(): Component? {
-            val callerPattern = Regex("✆ (.+) (§e)?✆")
             val recentMessage = ChatHandler.findInHistory(25) { message ->
-                callerPattern.containsMatchIn(message)
+                abiphoneCallerPattern.containsMatchIn(message)
             } ?: return null
 
             val siblings = recentMessage.siblings.filter { it.siblings.isEmpty() }
@@ -269,7 +327,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
             return callerName?.let {
                 Component.literal(it.string.replace("✆", "").trim()).withStyle(callerName.style)
             } ?: recentMessage.let { msg ->
-                callerPattern.find(msg.string)?.groups?.get(1)?.value?.let(Component::literal)
+                abiphoneCallerPattern.find(msg.string)?.groups?.get(1)?.value?.let(Component::literal)
             }
         }
 

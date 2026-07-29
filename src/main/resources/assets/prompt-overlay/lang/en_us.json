@@ -3,5 +3,11 @@
 
   "key.prompt-overlay.accept": "Accept the Prompt",
   "key.prompt-overlay.deny": "Deny the Prompt",
-  "key.prompt-overlay.dismiss": "Dismiss the Prompt"
+  "key.prompt-overlay.dismiss": "Dismiss the Prompt",
+
+  "key.prompt-overlay.first-option": "First option",
+  "key.prompt-overlay.second-option": "Second option",
+  "key.prompt-overlay.third-option": "Third option",
+  "key.prompt-overlay.fourth-option": "Fourth option",
+  "key.prompt-overlay.fifth-option": "Fifth option"
 }
