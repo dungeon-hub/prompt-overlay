@@ -163,7 +163,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val partyCommand = PartyCommandOverlay.PartyCommand.getCommand(command)
 
         if(partyCommand == null) {
-            logger.sendDebug("Unknown party command received, ignoring it: $command")
+            logger.sendDebug("[PO] Unknown party command received, ignoring it: $command")
             return@action
         }
 
