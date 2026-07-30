@@ -24,9 +24,11 @@ java {
     withSourcesJar()
 }
 
-// The API module lives in api/src and is published as its own "prompt-overlay-api" jar for other mods
-// to compile against. It's compiled as part of this project (not a separate Stonecutter project) because
-// Fabric Loom's Minecraft setup crashes when two sibling projects target the same Minecraft version.
+// The API module (api/src) is published separately, on its own independent Gradle/Stonecutter build -
+// see api/settings.gradle.kts. It's compiled here too, directly against these same source files, purely
+// so this mod's own code can reference Overlay/OverlayHandler/etc; nothing below publishes it again.
+// Fabric Loom's cross-project shared build services break if it's applied to two sibling projects
+// targeting the same Minecraft version in one Gradle invocation, so it can't be a subproject here.
 // Manually sc.process() each file since it's outside Stonecutter's own src/main tree, so it wouldn't
 // otherwise get the version replacements (see stonecutter.gradle.kts) applied to it.
 val apiSourceRoot = rootDir.resolve("api/src/main/kotlin")
@@ -192,44 +194,12 @@ tasks.build {
     dependsOn(tasks.shadowJar)
 }
 
-val apiId = property("api.id") as String
-val apiVersion = "${sc.current.version}-${property("api.version")}"
-
-// Thin jar containing only the api/src classes, so other mods can depend on the API without the whole mod.
-val apiJar = tasks.register<Jar>("apiJar") {
-    archiveBaseName.set(apiId)
-    archiveVersion.set(apiVersion)
-    from(sourceSets.main.get().output) {
-        include("net/dungeonhub/promptoverlay/api/**")
-        include("net/dungeonhub/promptoverlay/PromptOverlayApi.class")
-    }
-}
-
-val apiSourcesJar = tasks.register<Jar>("apiSourcesJar") {
-    archiveBaseName.set(apiId)
-    archiveVersion.set(apiVersion)
-    archiveClassifier.set("sources")
-    from(processedApiSourceRoot)
-}
-
-tasks.build {
-    dependsOn(apiJar, apiSourcesJar)
-}
-
-// configure the maven publications
+// configure the maven publication
 publishing {
     publications {
         create<MavenPublication>("mavenJava") {
             artifactId = property("mod.id") as String
             from(components["java"])
-        }
-
-        create<MavenPublication>("mavenApi") {
-            groupId = "net.dungeon-hub.prompt-overlay"
-            artifactId = apiId
-            version = apiVersion
-            artifact(apiJar)
-            artifact(apiSourcesJar)
         }
     }
 

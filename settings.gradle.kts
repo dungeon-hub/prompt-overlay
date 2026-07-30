@@ -26,14 +26,16 @@ stonecutter {
     create(rootProject) {
         registerVersions()
         vcsVersion = "26.1.2"
-
-        // NOTE: :api is intentionally NOT a separate Stonecutter branch/project here.
-        // Fabric Loom's Minecraft setup crashes (ClassCastException on LoomGradleExtension) when two
-        // sibling projects in the same Gradle invocation target the exact same Minecraft version - which
-        // is exactly what a "1.21.11" + "1.21.11-api" pair would be. Instead, api/src is compiled as an
-        // extra source directory inside each main build script, and published as a second, filtered jar.
-        // See build.gradle.kts / build-obfuscated.gradle.kts.
     }
 }
+
+// NOTE: :api is NOT included here as a branch/subproject. Fabric Loom uses cross-project shared
+// build services (e.g. JarManifestService) that get corrupted (ClassCastException) whenever Loom is
+// applied to two sibling projects targeting the same Minecraft version within a single Gradle
+// invocation - which any "1.21.11" + "1.21.11-api" pair would be, regardless of whether they depend
+// on each other. api/ is instead its own fully independent Stonecutter/Gradle build - see
+// api/settings.gradle.kts - built and published separately (`./gradlew -p api build`). This mod still
+// compiles api/src directly (see build.gradle.kts) so there's no source duplication, just two
+// separate Gradle invocations reading the same files.
 
 rootProject.name = "prompt-overlay"
