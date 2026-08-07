@@ -46,6 +46,10 @@ object FeaturesToggle : ObjectKt() {
         name = Literal("Skyblock Trade Request")
     }
 
+    val starlynSisterRewards by boolean("show_starlyn_sister_rewards", true) {
+        name = Literal("Starlyn Sister Rewards")
+    }
+
     val trapperHunt by boolean("show_trapper_hunt", true) {
         name = Literal("Trapper Hunt")
     }

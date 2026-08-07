@@ -19,6 +19,7 @@ import net.dungeonhub.promptoverlay.overlays.PartyCommandOverlay
 import net.dungeonhub.promptoverlay.overlays.PartyInviteOverlay
 import net.dungeonhub.promptoverlay.overlays.SingleOptionSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.SkyblockTradeOverlay
+import net.dungeonhub.promptoverlay.overlays.StarlynSisterRewardsOverlay
 import net.dungeonhub.promptoverlay.overlays.ThreeOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperRestartOverlay
@@ -179,6 +180,11 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val acceptCommand = findClickCommand(message) { it.startsWith("/tradeaccept") } ?: return@action
 
         OverlayFeature.setOverlay(SkyblockTradeOverlay(player, acceptCommand))
+    }),
+    StarlynSisterRewards(Regex("Come see me at Torrhus Canyon or Click Here to claim your rewards!"), FeaturesToggle::starlynSisterRewards, action=action@{ message, _ ->
+        findClickCommand(message) { it == "/starlynsisterrewards" } ?: return@action
+
+        OverlayFeature.setOverlay(StarlynSisterRewardsOverlay())
     }),
     TrapperHunt(Regex("Accept the trapper's task to hunt the animal?"), FeaturesToggle::trapperHunt, action=action@{ message, _ ->
         lastTrapperQuest = Clock.System.now()
