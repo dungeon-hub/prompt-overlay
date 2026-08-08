@@ -60,6 +60,11 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("The color of the party invite overlay.")
     }
 
+    val starlynSisterColor by color("starlyn_sister_color", Color.YELLOW.rgb) {
+        name = Literal("Starlyn Sister Color")
+        description = Literal("The color of the starlyn sister rewards overlay.")
+    }
+
     val tradeColor by color("trade_color", Color(0x2BA801).rgb) {
         name = Literal("Trade Color")
         description = Literal("The color of the Skyblock trade overlay.")
