@@ -18,6 +18,21 @@ object OverlayCategory : CategoryKt("overlay") {
     val backgroundColor by color("background_color", 0xA0000000.toInt()) {
         name = Literal("Background Color")
         allowAlpha = true
+
+        presets = arrayOf(
+            0xA0000000.toInt(), // Default (gray)
+            0xE0141E33.toInt(), // Dark Blue
+            0xE0331118.toInt(), // Crimson Red
+            0xE01C3528.toInt(), // Light Green
+            0xE03B3213.toInt(), // Golden Yellow
+            0xE03A2334.toInt(), // Light Pink
+            0xF5101018.toInt(), // Opaque Obsidian: Near-opaque charcoal with a subtle violet cast for maximum readability
+            0x00000000.toInt()  // Transparent
+        ).toIntArray()
+    }
+
+    val customBackgroundImage by boolean("custom_background_image", false) {
+        name = Literal("Custom Background Image")
     }
 
     val abiphoneColor by color("abiphone_call_color", Color.LIGHT_GRAY.rgb) {

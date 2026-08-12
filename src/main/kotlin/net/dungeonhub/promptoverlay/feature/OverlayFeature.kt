@@ -7,13 +7,14 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
-import net.dungeonhub.promptoverlay.PromptOverlay
+import net.dungeonhub.promptoverlay.PromptOverlay.MOD_ID
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
 import java.time.LocalDate
 import java.time.Month
@@ -40,10 +41,12 @@ object OverlayFeature {
 
     private val scheduler = CoroutineScope(supervisor + dispatcher)
 
+    val customBackground = Identifier.fromNamespaceAndPath(MOD_ID, "textures/gui/prompt-background.png")
+
     fun init() {
         HudElementRegistry.attachElementBefore(
             VanillaHudElements.PLAYER_LIST,
-            Identifier.fromNamespaceAndPath(PromptOverlay.MOD_ID, "prompt")
+            Identifier.fromNamespaceAndPath(MOD_ID, "prompt")
         ) { graphics, _ -> render(graphics) }
     }
 
@@ -185,7 +188,7 @@ object OverlayFeature {
         val cornerRadius = 8
 
         // Draw background
-        drawBox(graphics, x, y, boxWidth, totalHeight, cornerRadius, OverlayCategory.backgroundColor)
+        drawBackground(graphics, x, y, boxWidth, totalHeight, cornerRadius)
 
         // Draw rounded border
         drawBorders(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, borderColor)
@@ -247,9 +250,27 @@ object OverlayFeature {
         }
     }
 
-    private fun drawBox(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int, color: Int) {
-        // Simple rectangle
-        graphics.fill(x, y, x + width, y + height, color)
+    private fun drawBackground(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int) {
+        if (OverlayCategory.customBackgroundImage) {
+            graphics.blit(RenderPipelines.GUI_TEXTURED, customBackground, x, y, 0f, 0f, width, height, width, height)
+            drawRoundedFill(graphics, x, y, width, height, radius, 0xA8000000.toInt())
+        } else {
+            val color = OverlayCategory.backgroundColor
+            drawRoundedFill(graphics, x, y, width, height, radius, color)
+        }
+    }
+
+    private fun drawRoundedFill(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int, color: Int) {
+        if (radius <= 0) {
+            graphics.fill(x, y, x + width, y + height, color)
+            return
+        }
+        // Render every row exactly once. Overlapping translucent fills compound
+        // their alpha and made the center darker than the rounded side sections.
+        for (row in 0 until height) {
+            val inset = roundedInset(row, height, radius)
+            graphics.fill(x + inset, y + row, x + width - inset, y + row + 1, color)
+        }
     }
 
     private fun drawBorders(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int, thickness: Int, color: Int) {
@@ -261,6 +282,12 @@ object OverlayFeature {
         graphics.fill(x, y, x + thickness, y + height, color)
         // Right border
         graphics.fill(x + width - thickness, y, x + width, y + height, color)
+    }
+
+    private fun roundedInset(row: Int, height: Int, radius: Int): Int {
+        if (radius <= 0 || row in radius until height - radius) return 0
+        val distanceFromEdge = if (row < radius) row else height - row - 1
+        return radius - kotlin.math.sqrt((radius * radius - (radius - distanceFromEdge) * (radius - distanceFromEdge)).toDouble()).toInt()
     }
 
     private fun drawRainbowBar(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int) {
