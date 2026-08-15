@@ -2,6 +2,7 @@ package net.dungeonhub.promptoverlay.config.categories
 
 import com.teamresourceful.resourcefulconfig.api.types.options.TranslatableValue
 import com.teamresourceful.resourcefulconfigkt.api.CategoryKt
+import net.dungeonhub.promptoverlay.enums.GlowStyle
 import java.awt.Color
 
 object OverlayCategory : CategoryKt("overlay") {
@@ -33,6 +34,10 @@ object OverlayCategory : CategoryKt("overlay") {
 
     val customBackgroundImage by boolean("custom_background_image", false) {
         name = Literal("Custom Background Image")
+    }
+
+    val glow by enum("glow_style", GlowStyle.None) {
+        name = Literal("Glow Style")
     }
 
     val abiphoneColor by color("abiphone_call_color", Color.LIGHT_GRAY.rgb) {

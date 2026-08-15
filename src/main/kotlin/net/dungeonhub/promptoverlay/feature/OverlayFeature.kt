@@ -11,6 +11,7 @@ import net.dungeonhub.promptoverlay.PromptOverlay.MOD_ID
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.enums.RemoveType
+import net.dungeonhub.promptoverlay.enums.GlowStyle
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -20,6 +21,7 @@ import java.time.LocalDate
 import java.time.Month
 import java.util.concurrent.Executors
 import kotlin.math.pow
+import kotlin.math.sin
 import kotlin.time.Duration.Companion.seconds
 
 object OverlayFeature {
@@ -187,6 +189,8 @@ object OverlayFeature {
         val borderThickness = 2
         val cornerRadius = 8
 
+        drawGlow(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderColor)
+
         // Draw background
         drawBackground(graphics, x, y, boxWidth, totalHeight, cornerRadius)
 
@@ -288,6 +292,37 @@ object OverlayFeature {
         if (radius <= 0 || row in radius until height - radius) return 0
         val distanceFromEdge = if (row < radius) row else height - row - 1
         return radius - kotlin.math.sqrt((radius * radius - (radius - distanceFromEdge) * (radius - distanceFromEdge)).toDouble()).toInt()
+    }
+
+    private fun withAlpha(color: Int, alpha: Int): Int =
+        (alpha.coerceIn(0, 0xFF) shl 24) or (color and 0x00FFFFFF)
+
+    private fun drawGlow(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int, color: Int) {
+        val strength = when (OverlayCategory.glow) {
+            GlowStyle.None -> return
+            GlowStyle.Soft -> 0.45
+            GlowStyle.Strong -> 0.75
+            GlowStyle.Pulse -> {
+                val phase = (System.currentTimeMillis() % 2_000L).toDouble() / 2_000.0 * Math.PI * 2.0
+                0.55 + (sin(phase) + 1.0) * 0.225
+            }
+        }
+
+        // Several increasingly faint rings create a glow without requiring a
+        // post-processing shader, so it remains compatible with HUD extraction.
+        for (distance in 5 downTo 1) {
+            val alpha = (strength * (6 - distance) * 32).toInt()
+            drawBorders(
+                graphics,
+                x - distance,
+                y - distance,
+                width + distance * 2,
+                height + distance * 2,
+                if (radius > 0) radius + distance else 0,
+                1,
+                withAlpha(color, alpha)
+            )
+        }
     }
 
     private fun drawRainbowBar(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int) {
