@@ -144,9 +144,18 @@ object OverlayFeature {
         // Apply animation offset
         val (x, y) = when {
             isAnimatingIn -> {
-                // Slide in from top
-                val offsetY = ((1.0 - easedProgress) * (baseY + totalHeight)).toInt()
-                baseX to (baseY - offsetY)
+                when (OverlayCategory.animation) {
+                    PromptAnimation.FlyIn -> {
+                        val offsetY = ((1.0 - easedProgress) * (baseY + totalHeight)).toInt()
+                        baseX to (baseY - offsetY)
+                    }
+                    PromptAnimation.Bounce -> {
+                        val bounceProgress = easeOutBack(progress)
+                        val offsetY = ((1.0 - bounceProgress) * (baseY + totalHeight)).toInt()
+                        baseX to (baseY - offsetY)
+                    }
+                    PromptAnimation.Appear -> baseX to baseY
+                }
             }
             isAnimatingOut -> {
                 when (animationOutType) {
@@ -252,6 +261,12 @@ object OverlayFeature {
         } else {
             1 - (-2 * t + 2).pow(3.0) / 2
         }
+    }
+
+    private fun easeOutBack(t: Double): Double {
+        val overshoot = 1.70158
+        val shifted = t - 1.0
+        return 1.0 + (overshoot + 1.0) * shifted.pow(3.0) + overshoot * shifted.pow(2.0)
     }
 
     private fun drawBackground(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int) {

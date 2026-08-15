@@ -3,6 +3,7 @@ package net.dungeonhub.promptoverlay.config.categories
 import com.teamresourceful.resourcefulconfig.api.types.options.TranslatableValue
 import com.teamresourceful.resourcefulconfigkt.api.CategoryKt
 import net.dungeonhub.promptoverlay.enums.GlowStyle
+import net.dungeonhub.promptoverlay.enums.PromptAnimation
 import java.awt.Color
 
 object OverlayCategory : CategoryKt("overlay") {
@@ -34,6 +35,12 @@ object OverlayCategory : CategoryKt("overlay") {
 
     val customBackgroundImage by boolean("custom_background_image", false) {
         name = Literal("Custom Background Image")
+        description = Literal("Please note that this requires a texture pack to use.")
+    }
+
+    val animation by enum("entry_animation", PromptAnimation.FlyIn) {
+        name = Literal("Entry Animation")
+        description = Literal("The animation that's played when a new prompt is received.")
     }
 
     val glow by enum("glow_style", GlowStyle.None) {
