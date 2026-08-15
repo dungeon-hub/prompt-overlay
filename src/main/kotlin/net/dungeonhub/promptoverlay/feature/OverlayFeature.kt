@@ -13,14 +13,17 @@ import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.dungeonhub.promptoverlay.enums.PromptAnimation
 import net.dungeonhub.promptoverlay.enums.GlowStyle
+import net.dungeonhub.promptoverlay.enums.PromptStyle
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
+import java.awt.Color
 import java.time.LocalDate
 import java.time.Month
 import java.util.concurrent.Executors
+import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.Duration.Companion.seconds
@@ -196,32 +199,48 @@ object OverlayFeature {
         val borderColorRGB = overlay.borderColor.rgb and 0x00FFFFFF
         val borderColor = 0xFF000000.toInt() or borderColorRGB
 
+        val style = OverlayCategory.style
+        val wrapProgress = style.supportsWrappedProgress && OverlayCategory.wrapProgress
+
         val borderThickness = 2
-        val cornerRadius = 8
+        val cornerRadius = if (style == PromptStyle.Rounded) 8 else 0
 
         drawGlow(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderColor)
 
         // Draw background
         drawBackground(graphics, x, y, boxWidth, totalHeight, cornerRadius)
 
-        // Draw rounded border
-        drawBorders(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, borderColor)
+        if (!wrapProgress) {
+            when (style) {
+                PromptStyle.Default -> drawBorders(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, borderColor)
+                PromptStyle.Rounded -> drawBorders(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, borderColor)
+                PromptStyle.CornerAccents -> drawCornerAccents(graphics, x, y, boxWidth, totalHeight, borderThickness, borderColor)
+                PromptStyle.DoubleBorder -> drawDoubleBorder(graphics, x, y, boxWidth, totalHeight, borderColor)
+                PromptStyle.SideRails -> drawSideRails(graphics, x, y, boxWidth, totalHeight, borderColor)
+            }
+        }
 
         // Draw loading bar separator between message and actions
         val separatorY = y + messageHeight
         val separatorWidth = boxWidth - padding * 2
 
-        // Calculate loading bar progress (0.0 to 1.0 as time passes)
-        if (!isAnimatingOut) {
+        val dismissProgress = if (!isAnimatingOut) {
             val elapsedDismissMs = System.currentTimeMillis() - autoDismissStartTime
-            val dismissProgress = (elapsedDismissMs.toDouble() / OverlayCategory.overlayDisplayDuration.seconds.inWholeMilliseconds).coerceIn(0.0, 1.0)
-            val filledWidth = (separatorWidth * dismissProgress).toInt()
+            (elapsedDismissMs.toDouble() / OverlayCategory.overlayDisplayDuration.seconds.inWholeMilliseconds).coerceIn(0.0, 1.0)
+        } else 1.0
+        val pride = LocalDate.now().month == Month.JUNE || OverlayCategory.alwaysPrideMonth
 
-            val isJune = LocalDate.now().month == Month.JUNE
+        if (wrapProgress) {
+            drawWrappedProgress(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, dismissProgress, borderColor, pride)
+            // Wrapped progress replaces only the animated timer. Keep a static,
+            // fully colored separator between the message and its actions.
+            graphics.fill(x + padding, separatorY, x + boxWidth - padding, separatorY + borderThickness, borderColor)
+        } else if (!isAnimatingOut) {
+            val filledWidth = (separatorWidth * dismissProgress).toInt()
 
             // Draw filled portion
             if (filledWidth > 0) {
-                if (isJune || OverlayCategory.alwaysPrideMonth) {
+                if (pride) {
                     // Draw rainbow gradient
                     drawRainbowBar(graphics, x + padding, separatorY, filledWidth, 2)
                 } else {
@@ -236,9 +255,7 @@ object OverlayFeature {
             }
         } else {
             // When animating out, show full bar
-            val isJune = LocalDate.now().month == Month.JUNE
-
-            if (isJune || OverlayCategory.alwaysPrideMonth) {
+            if (pride) {
                 drawRainbowBar(graphics, x + padding, separatorY, separatorWidth, 2)
             } else {
                 graphics.fill(x + padding, separatorY, x + boxWidth - padding, separatorY + 2, borderColor)
@@ -294,6 +311,23 @@ object OverlayFeature {
     }
 
     private fun drawBorders(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int, thickness: Int, color: Int) {
+        if (radius > 0) {
+            // Draw only the ring. Painting a translucent background over a solid
+            // border made the border color bleed through at the left and right.
+            for (row in 0 until height) {
+                val outerInset = roundedInset(row, height, radius)
+                val innerRow = row - thickness
+                if (innerRow !in 0 until height - thickness * 2) {
+                    graphics.fill(x + outerInset, y + row, x + width - outerInset, y + row + 1, color)
+                    continue
+                }
+
+                val innerInset = thickness + roundedInset(innerRow, height - thickness * 2, (radius - thickness).coerceAtLeast(0))
+                graphics.fill(x + outerInset, y + row, x + innerInset, y + row + 1, color)
+                graphics.fill(x + width - innerInset, y + row, x + width - outerInset, y + row + 1, color)
+            }
+            return
+        }
         // Top border
         graphics.fill(x, y, x + width, y + thickness, color)
         // Bottom border
@@ -308,6 +342,31 @@ object OverlayFeature {
         if (radius <= 0 || row in radius until height - radius) return 0
         val distanceFromEdge = if (row < radius) row else height - row - 1
         return radius - kotlin.math.sqrt((radius * radius - (radius - distanceFromEdge) * (radius - distanceFromEdge)).toDouble()).toInt()
+    }
+
+    private fun drawCornerAccents(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, thickness: Int, color: Int) {
+        val length = 14
+        graphics.fill(x, y, x + length, y + thickness, color); graphics.fill(x, y, x + thickness, y + length, color)
+        graphics.fill(x + width - length, y, x + width, y + thickness, color); graphics.fill(x + width - thickness, y, x + width, y + length, color)
+        graphics.fill(x, y + height - thickness, x + length, y + height, color); graphics.fill(x, y + height - length, x + thickness, y + height, color)
+        graphics.fill(x + width - length, y + height - thickness, x + width, y + height, color); graphics.fill(x + width - thickness, y + height - length, x + width, y + height, color)
+    }
+
+    private fun drawDoubleBorder(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, color: Int) {
+        drawBorders(graphics, x, y, width, height, 0, 1, color)
+        val inset = 3
+        drawBorders(graphics, x + inset, y + inset, width - inset * 2, height - inset * 2, 0, 1, withAlpha(color, 0x80))
+    }
+
+    private fun drawSideRails(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, color: Int) {
+        val railWidth = 3
+        val capLength = 18
+        graphics.fill(x, y, x + railWidth, y + height, color)
+        graphics.fill(x + width - railWidth, y, x + width, y + height, color)
+        graphics.fill(x, y, x + capLength, y + 1, color)
+        graphics.fill(x + width - capLength, y, x + width, y + 1, color)
+        graphics.fill(x, y + height - 1, x + capLength, y + height, color)
+        graphics.fill(x + width - capLength, y + height - 1, x + width, y + height, color)
     }
 
     private fun withAlpha(color: Int, alpha: Int): Int =
@@ -339,6 +398,104 @@ object OverlayFeature {
                 withAlpha(color, alpha)
             )
         }
+    }
+
+    private fun drawWrappedProgress(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int, thickness: Int, progress: Double, color: Int, pride: Boolean) {
+        if (OverlayCategory.style == PromptStyle.DoubleBorder) {
+            drawRectangularWrappedProgress(graphics, x, y, width, height, 1, progress, color, pride)
+
+            val inset = 3
+            drawRectangularWrappedProgress(
+                graphics,
+                x + inset,
+                y + inset,
+                width - inset * 2,
+                height - inset * 2,
+                1,
+                progress,
+                withAlpha(color, 0x80),
+                pride,
+                0x20FFFFFF
+            )
+            return
+        }
+
+        if (radius > 0) {
+            val path = roundedPerimeter(x, y, width - thickness + 1, height - thickness + 1, radius)
+            drawBorders(graphics, x, y, width, height, radius, thickness, 0x40FFFFFF)
+            drawPath(graphics, path, thickness, (path.size * progress).toInt(), color, pride)
+        } else {
+            drawRectangularWrappedProgress(graphics, x, y, width, height, thickness, progress, color, pride)
+        }
+    }
+
+    private fun drawRectangularWrappedProgress(
+        graphics: GuiGraphicsExtractor,
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+        thickness: Int,
+        progress: Double,
+        color: Int,
+        pride: Boolean,
+        trackColor: Int = 0x40FFFFFF
+    ) {
+        val perimeter = 2 * width + 2 * (height - thickness * 2)
+        drawPerimeter(graphics, x, y, width, height, thickness, perimeter, trackColor, false)
+        drawPerimeter(graphics, x, y, width, height, thickness, (perimeter * progress).toInt(), color, pride)
+    }
+
+    private fun roundedPerimeter(x: Int, y: Int, width: Int, height: Int, radius: Int): List<Pair<Int, Int>> = buildList {
+        fun arc(centerX: Int, centerY: Int, startDegrees: Int) {
+            for (degree in startDegrees until startDegrees + 90) {
+                val angle = Math.toRadians(degree.toDouble())
+                add((centerX + cos(angle) * radius).toInt() to (centerY + sin(angle) * radius).toInt())
+            }
+        }
+        for (px in x + radius until x + width - radius) add(px to y)
+        arc(x + width - radius - 1, y + radius, 270)
+        for (py in y + radius until y + height - radius) add(x + width - 1 to py)
+        arc(x + width - radius - 1, y + height - radius - 1, 0)
+        for (px in x + width - radius - 1 downTo x + radius) add(px to y + height - 1)
+        arc(x + radius, y + height - radius - 1, 90)
+        for (py in y + height - radius - 1 downTo y + radius) add(x to py)
+        arc(x + radius, y + radius, 180)
+    }.distinct()
+
+    private fun drawPath(graphics: GuiGraphicsExtractor, path: List<Pair<Int, Int>>, thickness: Int, pixels: Int, color: Int, rainbow: Boolean) {
+        for (index in 0 until pixels.coerceIn(0, path.size)) {
+            val (px, py) = path[index]
+            val pixelColor = if (rainbow) rainbowColor(index, path.size) else color
+            graphics.fill(px, py, px + thickness, py + thickness, pixelColor)
+        }
+    }
+
+    private fun drawPerimeter(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, thickness: Int, pixels: Int, color: Int, rainbow: Boolean) {
+        var remaining = pixels
+        var traveled = 0
+        val perimeter = 2 * width + 2 * (height - thickness * 2)
+        fun segment(length: Int, draw: (Int, Int) -> Unit) {
+            val amount = remaining.coerceIn(0, length)
+            for (i in 0 until amount) {
+                val pixelColor = if (rainbow) {
+                    withAlpha(rainbowColor(traveled + i, perimeter), color ushr 24)
+                } else color
+                draw(i, pixelColor)
+            }
+            remaining -= amount; traveled += length
+        }
+        // Top and bottom own the corner squares. The side segments stop before
+        // them, so translucent track pixels never stack into brighter squares.
+        segment(width) { i, c -> graphics.fill(x + i, y, x + i + 1, y + thickness, c) }
+        segment(height - thickness * 2) { i, c -> graphics.fill(x + width - thickness, y + thickness + i, x + width, y + thickness + i + 1, c) }
+        segment(width) { i, c -> graphics.fill(x + width - i - 1, y + height - thickness, x + width - i, y + height, c) }
+        segment(height - thickness * 2) { i, c -> graphics.fill(x, y + height - thickness - i - 1, x + thickness, y + height - thickness - i, c) }
+    }
+
+    private fun rainbowColor(position: Int, length: Int): Int {
+        val hue = position.toFloat() / length.coerceAtLeast(1)
+        return 0xFF000000.toInt() or (Color.HSBtoRGB(hue, 0.85f, 1f) and 0x00FFFFFF)
     }
 
     private fun drawRainbowBar(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int) {

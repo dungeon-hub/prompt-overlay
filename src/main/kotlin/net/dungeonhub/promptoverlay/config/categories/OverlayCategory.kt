@@ -4,6 +4,7 @@ import com.teamresourceful.resourcefulconfig.api.types.options.TranslatableValue
 import com.teamresourceful.resourcefulconfigkt.api.CategoryKt
 import net.dungeonhub.promptoverlay.enums.GlowStyle
 import net.dungeonhub.promptoverlay.enums.PromptAnimation
+import net.dungeonhub.promptoverlay.enums.PromptStyle
 import java.awt.Color
 
 object OverlayCategory : CategoryKt("overlay") {
@@ -36,6 +37,16 @@ object OverlayCategory : CategoryKt("overlay") {
     val customBackgroundImage by boolean("custom_background_image", false) {
         name = Literal("Custom Background Image")
         description = Literal("Please note that this requires a texture pack to use.")
+    }
+
+    val style by enum("prompt_style", PromptStyle.Default) {
+        name = Literal("Prompt Style")
+    }
+
+    val wrapProgress by boolean("wrap_progress", false) {
+        name = Literal("Wrap Progress")
+        description = Literal("Wraps the progress bar around the prompt. Note that only certain styles support this!")
+        condition = { style.supportsWrappedProgress }
     }
 
     val animation by enum("entry_animation", PromptAnimation.FlyIn) {
