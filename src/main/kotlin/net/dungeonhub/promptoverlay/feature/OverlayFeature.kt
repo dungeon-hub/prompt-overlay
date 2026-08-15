@@ -195,6 +195,41 @@ object OverlayFeature {
             isAnimatingIn = false
         }
 
+        val dismissProgress = if (!isAnimatingOut) {
+            val elapsedDismissMs = System.currentTimeMillis() - autoDismissStartTime
+            (elapsedDismissMs.toDouble() / OverlayCategory.overlayDisplayDuration.seconds.inWholeMilliseconds).coerceIn(0.0, 1.0)
+        } else 1.0
+
+        renderOverlay(graphics, overlay, x, y, boxWidth, dismissProgress, isAnimatingOut)
+    }
+
+    fun renderPreview(graphics: GuiGraphicsExtractor, overlay: Overlay, x: Int, y: Int, width: Int, dismissProgress: Double = 0.5) {
+        renderOverlay(
+            graphics,
+            overlay,
+            x,
+            y,
+            width,
+            dismissProgress,
+            progressComplete = false
+        )
+    }
+
+    fun renderOverlay(
+        graphics: GuiGraphicsExtractor,
+        overlay: Overlay,
+        x: Int,
+        y: Int,
+        boxWidth: Int,
+        dismissProgress: Double,
+        progressComplete: Boolean
+    ) {
+        val font = net.minecraft.client.Minecraft.getInstance().font
+        val padding = 6
+        val messageHeight = font.lineHeight + padding * 2
+        val actionsHeight = overlay.getActionsHeight(boxWidth)
+        val totalHeight = messageHeight + actionsHeight + padding
+
         // Convert AWT Color to RGB int
         val borderColorRGB = overlay.borderColor.rgb and 0x00FFFFFF
         val borderColor = 0xFF000000.toInt() or borderColorRGB
@@ -224,19 +259,16 @@ object OverlayFeature {
         val separatorY = y + messageHeight
         val separatorWidth = boxWidth - padding * 2
 
-        val dismissProgress = if (!isAnimatingOut) {
-            val elapsedDismissMs = System.currentTimeMillis() - autoDismissStartTime
-            (elapsedDismissMs.toDouble() / OverlayCategory.overlayDisplayDuration.seconds.inWholeMilliseconds).coerceIn(0.0, 1.0)
-        } else 1.0
+        val clampedDismissProgress = dismissProgress.coerceIn(0.0, 1.0)
         val pride = LocalDate.now().month == Month.JUNE || OverlayCategory.alwaysPrideMonth
 
         if (wrapProgress) {
-            drawWrappedProgress(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, dismissProgress, borderColor, pride)
+            drawWrappedProgress(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, clampedDismissProgress, borderColor, pride)
             // Wrapped progress replaces only the animated timer. Keep a static,
             // fully colored separator between the message and its actions.
             graphics.fill(x + padding, separatorY, x + boxWidth - padding, separatorY + borderThickness, borderColor)
-        } else if (!isAnimatingOut) {
-            val filledWidth = (separatorWidth * dismissProgress).toInt()
+        } else if (!progressComplete) {
+            val filledWidth = (separatorWidth * clampedDismissProgress).toInt()
 
             // Draw filled portion
             if (filledWidth > 0) {

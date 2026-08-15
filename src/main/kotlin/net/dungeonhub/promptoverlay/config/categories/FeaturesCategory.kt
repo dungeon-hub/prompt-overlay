@@ -45,7 +45,9 @@ object FeaturesCategory : CategoryKt("features") {
     val ignoredContacts get() = parseContacts(_ignoredContacts)
 
     init {
-        ResourcefulConfigUI.registerElementRenderer(Identifier.fromNamespaceAndPath(MOD_ID, "ignored_abiphone_contacts_renderer"), { IgnoredAbiphoneContactsRenderer(it) })
+        ResourcefulConfigUI.registerElementRenderer(Identifier.fromNamespaceAndPath(MOD_ID, "ignored_abiphone_contacts_renderer")) {
+            IgnoredAbiphoneContactsRenderer(it)
+        }
     }
 
     private data class IgnoredAbiphoneContactsRenderer(val element: ResourcefulConfigElement?) : ResourcefulConfigElementRenderer {

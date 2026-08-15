@@ -1,15 +1,46 @@
 package net.dungeonhub.promptoverlay.config.categories
 
+import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigElementRenderer
+import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigUI
+import com.teamresourceful.resourcefulconfig.api.types.ResourcefulConfigElement
 import com.teamresourceful.resourcefulconfig.api.types.options.TranslatableValue
 import com.teamresourceful.resourcefulconfigkt.api.CategoryKt
+import net.dungeonhub.promptoverlay.PromptOverlay.MOD_ID
 import net.dungeonhub.promptoverlay.enums.GlowStyle
 import net.dungeonhub.promptoverlay.enums.PromptAnimation
 import net.dungeonhub.promptoverlay.enums.PromptStyle
+import net.dungeonhub.promptoverlay.feature.OverlayFeature
+import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
+import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.gui.components.AbstractWidget
+import net.minecraft.client.gui.narration.NarrationElementOutput
+import net.minecraft.network.chat.CommonComponents
+import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
 import java.awt.Color
+import java.util.function.Predicate
 
 object OverlayCategory : CategoryKt("overlay") {
+    private val previewRenderer = Identifier.fromNamespaceAndPath(MOD_ID, "overlay_preview_renderer")
+
     override val name: TranslatableValue
         get() = Literal("Overlays")
+
+    init {
+        ResourcefulConfigUI.registerElementRenderer(previewRenderer) { OverlayPreviewRenderer }
+        element(OverlayPreviewElement)
+    }
+
+    private object OverlayPreviewElement : ResourcefulConfigElement {
+        override fun renderer(): Identifier = previewRenderer
+        override fun search(predicate: Predicate<String>): Boolean = predicate.test("Overlay Preview")
+    }
+
+    private object OverlayPreviewRenderer : ResourcefulConfigElementRenderer {
+        override fun title(): Component = Component.literal("Preview")
+        override fun description(): Component = Component.empty()
+        override fun widgets(): MutableList<AbstractWidget> = mutableListOf(OverlayPreviewWidget())
+    }
 
     val overlayDisplayDuration by int("overlay_display_duration", 10) {
         name = Literal("Overlay Display Duration")
@@ -121,5 +152,20 @@ object OverlayCategory : CategoryKt("overlay") {
     val alwaysPrideMonth by boolean("always_pride_month", false) {
         name = Literal("Always Pride Month")
         description = Literal("Always assume that it's the Pride Month, giving you a special theme.")
+    }
+
+    private class OverlayPreviewWidget(width: Int = 200, height: Int = 53) :
+        AbstractWidget(0, 0, width, height, CommonComponents.EMPTY) {
+
+        override fun extractWidgetRenderState(
+            graphics: GuiGraphicsExtractor,
+            mouseX: Int,
+            mouseY: Int,
+            partialTick: Float
+        ) {
+            OverlayFeature.renderPreview(graphics, FriendRequestOverlay("Taubsie"), x, y, width)
+        }
+
+        override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
     }
 }
