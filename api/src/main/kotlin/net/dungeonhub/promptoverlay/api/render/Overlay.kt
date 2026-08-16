@@ -9,7 +9,7 @@ interface Overlay {
     val borderColor: Color
     val message: Component
 
-    fun getActionsHeight(width: Int): Int
+    fun getActionsHeight(width: Int): Int // TODO remove the width parameter
     fun getActionsWidth(font: Font): Int
     fun renderActions(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int)
 

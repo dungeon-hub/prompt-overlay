@@ -6,6 +6,7 @@ import com.teamresourceful.resourcefulconfig.api.types.ResourcefulConfigElement
 import com.teamresourceful.resourcefulconfig.api.types.options.TranslatableValue
 import com.teamresourceful.resourcefulconfigkt.api.CategoryKt
 import net.dungeonhub.promptoverlay.PromptOverlay.MOD_ID
+import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.enums.GlowStyle
 import net.dungeonhub.promptoverlay.enums.PromptAnimation
 import net.dungeonhub.promptoverlay.enums.PromptStyle
@@ -154,7 +155,7 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("Always assume that it's the Pride Month, giving you a special theme.")
     }
 
-    private class OverlayPreviewWidget(width: Int = 200, height: Int = 53) :
+    private class OverlayPreviewWidget(val overlay: Overlay = FriendRequestOverlay("Taubsie"), width: Int = OverlayFeature.calculateBoxWidth(overlay), height: Int = OverlayFeature.calculateTotalHeight(overlay)) :
         AbstractWidget(0, 0, width, height, CommonComponents.EMPTY) {
 
         override fun extractWidgetRenderState(
@@ -163,7 +164,7 @@ object OverlayCategory : CategoryKt("overlay") {
             mouseY: Int,
             partialTick: Float
         ) {
-            OverlayFeature.renderPreview(graphics, FriendRequestOverlay("Taubsie"), x, y, width)
+            OverlayFeature.renderPreview(graphics, overlay, x, y)
         }
 
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit

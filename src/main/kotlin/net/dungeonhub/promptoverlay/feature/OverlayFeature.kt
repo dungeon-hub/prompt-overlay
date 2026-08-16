@@ -16,6 +16,7 @@ import net.dungeonhub.promptoverlay.enums.GlowStyle
 import net.dungeonhub.promptoverlay.enums.PromptStyle
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
+import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
@@ -41,6 +42,10 @@ object OverlayFeature {
     private var animationOutType: RemoveType? = null
 
     private val ANIMATION_DURATION = 500.milliseconds
+
+    private const val PADDING = 6
+    private const val MIN_WIDTH = 150
+    private const val MAX_WIDTH = 400
 
     private val supervisor = SupervisorJob()
     private val dispatcher = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
@@ -103,38 +108,47 @@ object OverlayFeature {
         }
     }
 
+    fun calculateBoxWidth(overlay: Overlay): Int {
+        val font = Minecraft.getInstance().font
+
+        // Calculate required width based on message
+        val messageWidth = font.width(overlay.message)
+        val requiredMessageWidth = messageWidth + PADDING * 2 + 20 // Extra space for padding and margins
+
+        // Calculate required width based on actions
+        val tempActionsWidth = overlay.getActionsWidth(font)
+        val requiredActionsWidth = tempActionsWidth + PADDING * 2 + 20
+
+        // Choose the larger of the two, clamped between min and max
+        return maxOf(requiredMessageWidth, requiredActionsWidth).coerceIn(MIN_WIDTH, MAX_WIDTH)
+    }
+
+    fun calculateMessageHeight(): Int {
+        val font = Minecraft.getInstance().font
+        return font.lineHeight + PADDING * 2
+    }
+
+    fun calculateTotalHeight(overlay: Overlay): Int {
+        val messageHeight = calculateMessageHeight()
+        val actionsHeight = overlay.getActionsHeight(calculateBoxWidth(overlay)) // Get height without rendering
+        return messageHeight + actionsHeight + PADDING
+    }
+
     fun render(graphics: GuiGraphicsExtractor) {
         val overlay = if (isAnimatingOut) hidingOverlay else currentOverlay
         overlay ?: return
 
-        val minecraft = net.minecraft.client.Minecraft.getInstance()
+        val minecraft = Minecraft.getInstance()
 
         if (minecraft.options.hideGui) return
 
-        val font = minecraft.font
         val window = minecraft.window
         val screenWidth = window.guiScaledWidth
         val screenHeight = window.guiScaledHeight
 
-        // Calculate dimensions dynamically based on content
-        val padding = 6
-        val minWidth = 150
-        val maxWidth = 400
+        val boxWidth = calculateBoxWidth(overlay)
 
-        // Calculate required width based on message
-        val messageWidth = font.width(overlay.message)
-        val requiredMessageWidth = messageWidth + padding * 2 + 20 // Extra space for padding and margins
-
-        // Calculate required width based on actions
-        val tempActionsWidth = overlay.getActionsWidth(font)
-        val requiredActionsWidth = tempActionsWidth + padding * 2 + 20
-
-        // Choose the larger of the two, clamped between min and max
-        val boxWidth = maxOf(requiredMessageWidth, requiredActionsWidth).coerceIn(minWidth, maxWidth)
-
-        val messageHeight = font.lineHeight + padding * 2
-        val actionsHeight = overlay.getActionsHeight(boxWidth) // Get height without rendering
-        val totalHeight = messageHeight + actionsHeight + padding
+        val totalHeight = calculateTotalHeight(overlay)
 
         // Base position (center)
         val baseX = (screenWidth - boxWidth) / 2
@@ -200,16 +214,15 @@ object OverlayFeature {
             (elapsedDismissMs.toDouble() / OverlayCategory.overlayDisplayDuration.seconds.inWholeMilliseconds).coerceIn(0.0, 1.0)
         } else 1.0
 
-        renderOverlay(graphics, overlay, x, y, boxWidth, dismissProgress, isAnimatingOut)
+        renderOverlay(graphics, overlay, x, y, dismissProgress, isAnimatingOut)
     }
 
-    fun renderPreview(graphics: GuiGraphicsExtractor, overlay: Overlay, x: Int, y: Int, width: Int, dismissProgress: Double = 0.5) {
+    fun renderPreview(graphics: GuiGraphicsExtractor, overlay: Overlay, x: Int, y: Int, dismissProgress: Double = 0.5) {
         renderOverlay(
             graphics,
             overlay,
             x,
             y,
-            width,
             dismissProgress,
             progressComplete = false
         )
@@ -220,15 +233,13 @@ object OverlayFeature {
         overlay: Overlay,
         x: Int,
         y: Int,
-        boxWidth: Int,
         dismissProgress: Double,
         progressComplete: Boolean
     ) {
-        val font = net.minecraft.client.Minecraft.getInstance().font
-        val padding = 6
-        val messageHeight = font.lineHeight + padding * 2
-        val actionsHeight = overlay.getActionsHeight(boxWidth)
-        val totalHeight = messageHeight + actionsHeight + padding
+        val font = Minecraft.getInstance().font
+        val messageHeight = font.lineHeight + PADDING * 2
+        val boxWidth = calculateBoxWidth(overlay)
+        val totalHeight = calculateTotalHeight(overlay)
 
         // Convert AWT Color to RGB int
         val borderColorRGB = overlay.borderColor.rgb and 0x00FFFFFF
@@ -247,8 +258,7 @@ object OverlayFeature {
 
         if (!wrapProgress) {
             when (style) {
-                PromptStyle.Default -> drawBorders(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, borderColor)
-                PromptStyle.Rounded -> drawBorders(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, borderColor)
+                PromptStyle.Default, PromptStyle.Rounded -> drawBorders(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, borderColor)
                 PromptStyle.CornerAccents -> drawCornerAccents(graphics, x, y, boxWidth, totalHeight, borderThickness, borderColor)
                 PromptStyle.DoubleBorder -> drawDoubleBorder(graphics, x, y, boxWidth, totalHeight, borderColor)
                 PromptStyle.SideRails -> drawSideRails(graphics, x, y, boxWidth, totalHeight, borderColor)
@@ -257,16 +267,16 @@ object OverlayFeature {
 
         // Draw loading bar separator between message and actions
         val separatorY = y + messageHeight
-        val separatorWidth = boxWidth - padding * 2
+        val separatorWidth = boxWidth - PADDING * 2
 
         val clampedDismissProgress = dismissProgress.coerceIn(0.0, 1.0)
         val pride = LocalDate.now().month == Month.JUNE || OverlayCategory.alwaysPrideMonth
 
         if (wrapProgress) {
-            drawWrappedProgress(graphics, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, clampedDismissProgress, borderColor, pride)
+            drawWrappedProgress(graphics, style, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, clampedDismissProgress, borderColor, pride)
             // Wrapped progress replaces only the animated timer. Keep a static,
             // fully colored separator between the message and its actions.
-            graphics.fill(x + padding, separatorY, x + boxWidth - padding, separatorY + borderThickness, borderColor)
+            graphics.fill(x + PADDING, separatorY, x + boxWidth - PADDING, separatorY + borderThickness, borderColor)
         } else if (!progressComplete) {
             val filledWidth = (separatorWidth * clampedDismissProgress).toInt()
 
@@ -274,23 +284,23 @@ object OverlayFeature {
             if (filledWidth > 0) {
                 if (pride) {
                     // Draw rainbow gradient
-                    drawRainbowBar(graphics, x + padding, separatorY, filledWidth, 2)
+                    drawRainbowBar(graphics, x + PADDING, separatorY, filledWidth, 2)
                 } else {
                     // Draw with border color
-                    graphics.fill(x + padding, separatorY, x + padding + filledWidth, separatorY + 2, borderColor)
+                    graphics.fill(x + PADDING, separatorY, x + PADDING + filledWidth, separatorY + 2, borderColor)
                 }
             }
 
             // Draw empty portion with dim color
             if (filledWidth < separatorWidth) {
-                graphics.fill(x + padding + filledWidth, separatorY, x + boxWidth - padding, separatorY + 2, 0x40FFFFFF)
+                graphics.fill(x + PADDING + filledWidth, separatorY, x + boxWidth - PADDING, separatorY + 2, 0x40FFFFFF)
             }
         } else {
             // When animating out, show full bar
             if (pride) {
-                drawRainbowBar(graphics, x + padding, separatorY, separatorWidth, 2)
+                drawRainbowBar(graphics, x + PADDING, separatorY, separatorWidth, 2)
             } else {
-                graphics.fill(x + padding, separatorY, x + boxWidth - padding, separatorY + 2, borderColor)
+                graphics.fill(x + PADDING, separatorY, x + boxWidth - PADDING, separatorY + 2, borderColor)
             }
         }
 
@@ -298,11 +308,11 @@ object OverlayFeature {
         val messageText = overlay.message
         val textWidth = font.width(messageText)
         val messageX = x + (boxWidth - textWidth) / 2
-        val messageY = y + padding
+        val messageY = y + PADDING
         graphics.text(font, messageText, messageX, messageY, 0xFFFFFFFF.toInt())
 
         // Render actions
-        overlay.renderActions(graphics, x + padding, separatorY + padding, boxWidth - padding * 2)
+        overlay.renderActions(graphics, x + PADDING, separatorY + PADDING, boxWidth - PADDING * 2)
     }
 
     private fun easeInOutCubic(t: Double): Double {
@@ -432,8 +442,8 @@ object OverlayFeature {
         }
     }
 
-    private fun drawWrappedProgress(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int, thickness: Int, progress: Double, color: Int, pride: Boolean) {
-        if (OverlayCategory.style == PromptStyle.DoubleBorder) {
+    private fun drawWrappedProgress(graphics: GuiGraphicsExtractor, style: PromptStyle, x: Int, y: Int, width: Int, height: Int, radius: Int, thickness: Int, progress: Double, color: Int, pride: Boolean) {
+        if (style == PromptStyle.DoubleBorder) {
             drawRectangularWrappedProgress(graphics, x, y, width, height, 1, progress, color, pride)
 
             val inset = 3
