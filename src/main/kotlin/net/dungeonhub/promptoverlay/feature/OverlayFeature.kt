@@ -24,7 +24,6 @@ import java.awt.Color
 import java.time.LocalDate
 import java.time.Month
 import java.util.concurrent.Executors
-import kotlin.math.cos
 import kotlin.math.pow
 import kotlin.math.sin
 import kotlin.time.Duration.Companion.seconds
@@ -463,9 +462,9 @@ object OverlayFeature {
         }
 
         if (radius > 0) {
-            val path = roundedPerimeter(x, y, width - thickness + 1, height - thickness + 1, radius)
+            val path = RoundedPerimeterCache.get(width - thickness + 1, height - thickness + 1, radius)
             drawBorders(graphics, x, y, width, height, radius, thickness, 0x40FFFFFF)
-            drawPath(graphics, path, thickness, (path.size * progress).toInt(), color, pride)
+            drawPath(graphics, path, x, y, thickness, (path.size * progress).toInt(), color, pride)
         } else {
             drawRectangularWrappedProgress(graphics, x, y, width, height, thickness, progress, color, pride)
         }
@@ -488,28 +487,13 @@ object OverlayFeature {
         drawPerimeter(graphics, x, y, width, height, thickness, (perimeter * progress).toInt(), color, pride)
     }
 
-    private fun roundedPerimeter(x: Int, y: Int, width: Int, height: Int, radius: Int): List<Pair<Int, Int>> = buildList {
-        fun arc(centerX: Int, centerY: Int, startDegrees: Int) {
-            for (degree in startDegrees until startDegrees + 90) {
-                val angle = Math.toRadians(degree.toDouble())
-                add((centerX + cos(angle) * radius).toInt() to (centerY + sin(angle) * radius).toInt())
+    private fun drawPath(graphics: GuiGraphicsExtractor, path: List<PerimeterPoint>, x: Int, y: Int, thickness: Int, pixels: Int, color: Int, rainbow: Boolean) {
+        SameColorRun(graphics::fill) {
+            for (index in 0 until pixels.coerceIn(0, path.size)) {
+                val (px, py) = path[index]
+                val pixelColor = if (rainbow) rainbowColor(index, path.size) else color
+                add(x + px, y + py, x + px + thickness, y + py + thickness, pixelColor)
             }
-        }
-        for (px in x + radius until x + width - radius) add(px to y)
-        arc(x + width - radius - 1, y + radius, 270)
-        for (py in y + radius until y + height - radius) add(x + width - 1 to py)
-        arc(x + width - radius - 1, y + height - radius - 1, 0)
-        for (px in x + width - radius - 1 downTo x + radius) add(px to y + height - 1)
-        arc(x + radius, y + height - radius - 1, 90)
-        for (py in y + height - radius - 1 downTo y + radius) add(x to py)
-        arc(x + radius, y + radius, 180)
-    }.distinct()
-
-    private fun drawPath(graphics: GuiGraphicsExtractor, path: List<Pair<Int, Int>>, thickness: Int, pixels: Int, color: Int, rainbow: Boolean) {
-        for (index in 0 until pixels.coerceIn(0, path.size)) {
-            val (px, py) = path[index]
-            val pixelColor = if (rainbow) rainbowColor(index, path.size) else color
-            graphics.fill(px, py, px + thickness, py + thickness, pixelColor)
         }
     }
 
@@ -517,22 +501,24 @@ object OverlayFeature {
         var remaining = pixels
         var traveled = 0
         val perimeter = 2 * width + 2 * (height - thickness * 2)
-        fun segment(length: Int, draw: (Int, Int) -> Unit) {
-            val amount = remaining.coerceIn(0, length)
-            for (i in 0 until amount) {
-                val pixelColor = if (rainbow) {
-                    withAlpha(rainbowColor(traveled + i, perimeter), color ushr 24)
-                } else color
-                draw(i, pixelColor)
+        SameColorRun(graphics::fill) {
+            fun segment(length: Int, draw: SameColorRun.(Int, Int) -> Unit) {
+                val amount = remaining.coerceIn(0, length)
+                for (i in 0 until amount) {
+                    val pixelColor = if (rainbow) {
+                        withAlpha(rainbowColor(traveled + i, perimeter), color ushr 24)
+                    } else color
+                    draw(i, pixelColor)
+                }
+                remaining -= amount; traveled += length
             }
-            remaining -= amount; traveled += length
+            // Top and bottom own the corner squares. The side segments stop before
+            // them, so translucent track pixels never stack into brighter squares.
+            segment(width) { i, c -> add(x + i, y, x + i + 1, y + thickness, c) }
+            segment(height - thickness * 2) { i, c -> add(x + width - thickness, y + thickness + i, x + width, y + thickness + i + 1, c) }
+            segment(width) { i, c -> add(x + width - i - 1, y + height - thickness, x + width - i, y + height, c) }
+            segment(height - thickness * 2) { i, c -> add(x, y + height - thickness - i - 1, x + thickness, y + height - thickness - i, c) }
         }
-        // Top and bottom own the corner squares. The side segments stop before
-        // them, so translucent track pixels never stack into brighter squares.
-        segment(width) { i, c -> graphics.fill(x + i, y, x + i + 1, y + thickness, c) }
-        segment(height - thickness * 2) { i, c -> graphics.fill(x + width - thickness, y + thickness + i, x + width, y + thickness + i + 1, c) }
-        segment(width) { i, c -> graphics.fill(x + width - i - 1, y + height - thickness, x + width - i, y + height, c) }
-        segment(height - thickness * 2) { i, c -> graphics.fill(x, y + height - thickness - i - 1, x + thickness, y + height - thickness - i, c) }
     }
 
     private fun rainbowColor(position: Int, length: Int): Int {
