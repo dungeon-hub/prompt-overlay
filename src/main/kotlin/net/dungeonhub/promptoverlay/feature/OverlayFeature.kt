@@ -330,11 +330,46 @@ object OverlayFeature {
 
     private fun drawBackground(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int) {
         if (OverlayCategory.customBackgroundImage) {
-            graphics.blit(RenderPipelines.GUI_TEXTURED, customBackground, x, y, 0f, 0f, width, height, width, height)
+            drawRoundedBackgroundImage(graphics, x, y, width, height, radius)
             drawRoundedFill(graphics, x, y, width, height, radius, 0xA8000000.toInt())
         } else {
             val color = OverlayCategory.backgroundColor
             drawRoundedFill(graphics, x, y, width, height, radius, color)
+        }
+    }
+
+    private fun drawRoundedBackgroundImage(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, radius: Int) {
+        if (radius <= 0) {
+            graphics.blit(RenderPipelines.GUI_TEXTURED, customBackground, x, y, 0f, 0f, width, height, width, height)
+            return
+        }
+
+        // Draw runs of rows with the same inset so the texture follows the same
+        // rounded silhouette as the fill and border without changing its scale.
+        var firstRow = 0
+        while (firstRow < height) {
+            val inset = roundedInset(firstRow, height, radius)
+            var lastRow = firstRow + 1
+            while (lastRow < height && roundedInset(lastRow, height, radius) == inset) {
+                lastRow++
+            }
+
+            val clippedWidth = width - inset * 2
+            if (clippedWidth > 0) {
+                graphics.blit(
+                    RenderPipelines.GUI_TEXTURED,
+                    customBackground,
+                    x + inset,
+                    y + firstRow,
+                    inset.toFloat(),
+                    firstRow.toFloat(),
+                    clippedWidth,
+                    lastRow - firstRow,
+                    width,
+                    height
+                )
+            }
+            firstRow = lastRow
         }
     }
 
