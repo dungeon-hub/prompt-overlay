@@ -16,7 +16,8 @@ class DuelInviteOverlay(val player: String, duel: String): AcceptableOverlay, On
     }
 
     override val borderColor: Color get() = Color(OverlayCategory.duelColor)
-    override val message = Component.literal("$player invited you to $duel")
+    override val message = Component.literal("Duel invite")
+    override val description = Component.literal("$player invited you to $duel")
 
     override val firstText: String
         get() {

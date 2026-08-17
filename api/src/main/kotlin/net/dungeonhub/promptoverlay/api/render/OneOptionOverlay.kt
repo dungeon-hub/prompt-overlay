@@ -9,4 +9,8 @@ interface OneOptionOverlay {
     fun firstOptionKey(): String = PromptOverlayApi.getKeyMappingProvider().firstOptionKeyName
 
     fun firstOption()
+
+    fun dismissText(): String {
+        return "[${PromptOverlayApi.getKeyMappingProvider().dismissKeyName}] Dismiss"
+    }
 }

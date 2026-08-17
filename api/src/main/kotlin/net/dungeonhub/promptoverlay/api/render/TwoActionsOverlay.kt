@@ -16,20 +16,14 @@ interface TwoActionsOverlay : Overlay {
     }
 
     override fun getActionsWidth(font: Font): Int {
-        val dismissKeyName = PromptOverlayApi.getKeyMappingProvider().dismissKeyName
-        val dismissText = "[$dismissKeyName] Dismiss"
-
         val firstLineWidth = font.width(firstText) + font.width(secondText) + 20
-        val secondLineWidth = font.width(dismissText)
+        val secondLineWidth = font.width(dismissText())
 
         return max(firstLineWidth, secondLineWidth)
     }
 
     override fun renderActions(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int) {
         val font = Minecraft.getInstance().font
-
-        val dismissKeyName = PromptOverlayApi.getKeyMappingProvider().dismissKeyName
-        val dismissText = "[$dismissKeyName] Dismiss"
 
         val textColor = 0xFFFFFFFF.toInt()
 
@@ -42,9 +36,13 @@ interface TwoActionsOverlay : Overlay {
 
         // Second line: dismiss centered below
         val secondLineY = y + font.lineHeight + 4 // 4px spacing between lines
-        val dismissWidth = font.width(dismissText)
+        val dismissWidth = font.width(dismissText())
         val dismissX = x + (width - dismissWidth) / 2
 
-        graphics.text(font, dismissText, dismissX, secondLineY, textColor)
+        graphics.text(font, dismissText(), dismissX, secondLineY, textColor)
+    }
+
+    fun dismissText(): String {
+        return "[${PromptOverlayApi.getKeyMappingProvider().dismissKeyName}] Dismiss"
     }
 }

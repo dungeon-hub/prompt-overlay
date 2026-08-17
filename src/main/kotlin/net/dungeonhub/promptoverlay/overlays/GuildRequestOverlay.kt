@@ -16,7 +16,8 @@ class GuildRequestOverlay(val inviter: String, guildName: String?) : AcceptableO
     }
 
     override val borderColor: Color = Color(OverlayCategory.guildColor)
-    override val message = Component.literal("$inviter invited you into their guild${if (guildName != null) " $guildName" else ""}")
+    override val message = Component.literal("Guild invite")
+    override val description = Component.literal("$inviter invited you to ${guildName ?: "their guild"}")
 
     override val firstText: String
         get() {

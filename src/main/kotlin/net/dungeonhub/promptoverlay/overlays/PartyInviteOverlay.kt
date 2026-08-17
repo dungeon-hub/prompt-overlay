@@ -16,7 +16,8 @@ class PartyInviteOverlay(val inviter: String) : AcceptableOverlay, OneActionOver
     }
 
     override val borderColor: Color get() = Color(OverlayCategory.partyColor)
-    override val message = Component.literal("$inviter invited you into a party")
+    override val message = Component.literal("Party invite")
+    override val description = Component.literal("From $inviter")
 
     override val firstText: String
         get() {

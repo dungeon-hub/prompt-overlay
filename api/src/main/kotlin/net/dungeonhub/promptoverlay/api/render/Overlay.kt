@@ -8,6 +8,8 @@ import java.awt.Color
 interface Overlay {
     val borderColor: Color
     val message: Component
+    val description: Component
+        get() = Component.empty()
 
     fun getActionsHeight(width: Int): Int // TODO remove the width parameter
     fun getActionsWidth(font: Font): Int
