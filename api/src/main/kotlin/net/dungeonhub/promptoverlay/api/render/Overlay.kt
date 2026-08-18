@@ -1,5 +1,6 @@
 package net.dungeonhub.promptoverlay.api.render
 
+import net.dungeonhub.promptoverlay.PromptOverlayApi
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
@@ -16,4 +17,8 @@ interface Overlay {
     fun renderActions(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int)
 
     fun dismiss() {  }
+
+    fun dismissText(): String {
+        return "[${PromptOverlayApi.getKeyMappingProvider().dismissKeyName}] Dismiss"
+    }
 }

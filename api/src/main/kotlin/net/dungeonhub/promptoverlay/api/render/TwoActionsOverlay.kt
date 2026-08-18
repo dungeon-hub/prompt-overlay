@@ -1,6 +1,5 @@
 package net.dungeonhub.promptoverlay.api.render
 
-import net.dungeonhub.promptoverlay.PromptOverlayApi
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -40,9 +39,5 @@ interface TwoActionsOverlay : Overlay {
         val dismissX = x + (width - dismissWidth) / 2
 
         graphics.text(font, dismissText(), dismissX, secondLineY, textColor)
-    }
-
-    fun dismissText(): String {
-        return "[${PromptOverlayApi.getKeyMappingProvider().dismissKeyName}] Dismiss"
     }
 }

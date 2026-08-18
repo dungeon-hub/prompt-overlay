@@ -1,6 +1,5 @@
 package net.dungeonhub.promptoverlay.api.render
 
-import net.dungeonhub.promptoverlay.PromptOverlayApi
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -28,9 +27,5 @@ interface OneActionOverlay : Overlay {
 
         graphics.text(font, firstText, startX, y, textColor)
         graphics.text(font, dismissText(), startX + font.width(firstText) + 20, y, textColor)
-    }
-
-    private fun dismissText(): String {
-        return "[${PromptOverlayApi.getKeyMappingProvider().dismissKeyName}] Dismiss"
     }
 }

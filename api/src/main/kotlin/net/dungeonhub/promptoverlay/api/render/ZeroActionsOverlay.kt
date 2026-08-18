@@ -1,6 +1,5 @@
 package net.dungeonhub.promptoverlay.api.render
 
-import net.dungeonhub.promptoverlay.PromptOverlayApi
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -21,9 +20,5 @@ interface ZeroActionsOverlay : Overlay {
         val font = Minecraft.getInstance().font
         val text = dismissText()
         graphics.text(font, text, x + (width - font.width(text)) / 2, y, 0xFFFFFFFF.toInt())
-    }
-
-    private fun dismissText(): String {
-        return "[${PromptOverlayApi.getKeyMappingProvider().dismissKeyName}] Dismiss"
     }
 }
