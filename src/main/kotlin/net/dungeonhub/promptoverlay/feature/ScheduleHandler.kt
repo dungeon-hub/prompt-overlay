@@ -37,13 +37,16 @@ object ScheduleHandler {
 
     private fun launchScheduledPrompt(timeUntil: () -> Duration, announceBefore: () -> Duration, featureToggle: () -> Boolean, overlayBuilder: (Duration) -> Overlay) {
         scheduler.launch {
-            delay(timeUntil() - announceBefore())
+            val timeToEvent = timeUntil()
+            val leadTime = announceBefore()
+
+            delay(timeToEvent - leadTime)
 
             if(Minecraft.getInstance().level != null && featureToggle()) {
-                OverlayFeature.setOverlay(overlayBuilder(announceBefore()))
+                OverlayFeature.setOverlay(overlayBuilder(leadTime))
             }
 
-            delay(announceBefore())
+            delay(leadTime)
 
             launchScheduledPrompt(timeUntil, announceBefore, featureToggle, overlayBuilder)
         }
