@@ -145,6 +145,11 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("The color of the Trapper Hunt overlay.")
     }
 
+    val travelingZooColor by color("traveling_zoo_warp_color", Color.BLACK.rgb) {
+        name = Literal("Traveling Zoo Color")
+        description = Literal("The color of the traveling zoo warp overlay.")
+    }
+
     val trophyFishColor by color("trophy_fish_color", Color.YELLOW.rgb) {
         name = Literal("Trophy Fish Color")
         description = Literal("The color of the Trophy Fish GG overlay.")

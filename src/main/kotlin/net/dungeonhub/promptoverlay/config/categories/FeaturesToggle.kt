@@ -54,6 +54,11 @@ object FeaturesToggle : ObjectKt() {
         name = Literal("Trapper Hunt")
     }
 
+    val travelingZoo by boolean("show_traveling_zoo_warp", true) {
+        name = Literal("Traveling Zoo")
+        description = Literal("Show the Traveling Zoo Warp reminder.")
+    }
+
     val trophyFishGg by boolean("show_trophy_fish_gg", true) {
         name = Literal("Trophy Fish GG")
     }
