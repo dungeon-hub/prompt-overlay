@@ -11,7 +11,8 @@ import java.awt.Color
 
 class FriendRequestOverlay(val from: String): AcceptableOverlay, DeniableOverlay, TwoActionsOverlay {
     override val borderColor: Color = Color(OverlayCategory.friendColor)
-    override val message = Component.literal("Friend request from $from")
+    override val message = Component.literal("Friend request")
+    override val description = Component.literal("From $from")
 
     override fun accept() {
         Minecraft.getInstance().execute {

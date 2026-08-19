@@ -20,6 +20,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
+import net.minecraft.util.FormattedCharSequence
 import java.awt.Color
 import java.time.LocalDate
 import java.time.Month
@@ -110,9 +111,10 @@ object OverlayFeature {
     fun calculateBoxWidth(overlay: Overlay): Int {
         val font = Minecraft.getInstance().font
 
-        // Calculate required width based on message
+        /// Calculate required width based on the message and optional description
         val messageWidth = font.width(overlay.message)
-        val requiredMessageWidth = messageWidth + PADDING * 2 + 20 // Extra space for padding and margins
+        val descriptionWidth = font.width(overlay.description)
+        val requiredMessageWidth = maxOf(messageWidth, descriptionWidth) + PADDING * 2 + 20 // Extra space for padding and margins
 
         // Calculate required width based on actions
         val tempActionsWidth = overlay.getActionsWidth(font)
@@ -122,14 +124,27 @@ object OverlayFeature {
         return maxOf(requiredMessageWidth, requiredActionsWidth).coerceIn(MIN_WIDTH, MAX_WIDTH)
     }
 
-    fun calculateMessageHeight(): Int {
+    fun getDescriptionLines(overlay: Overlay, boxWidth: Int): List<FormattedCharSequence> {
         val font = Minecraft.getInstance().font
-        return font.lineHeight + PADDING * 2
+
+        return overlay.description.takeIf { it.string.isNotBlank() }?.let {
+            font.split(it, boxWidth - PADDING * 2)
+        } ?: emptyList()
+    }
+
+    fun calculateTitleHeight(overlay: Overlay, boxWidth: Int): Int {
+        val font = Minecraft.getInstance().font
+
+        val descriptionLines = getDescriptionLines(overlay, boxWidth)
+        val descriptionHeight = if (descriptionLines.isEmpty()) 0 else PADDING / 2 + descriptionLines.size * font.lineHeight
+        return font.lineHeight + descriptionHeight + PADDING * 2
     }
 
     fun calculateTotalHeight(overlay: Overlay): Int {
-        val messageHeight = calculateMessageHeight()
-        val actionsHeight = overlay.getActionsHeight(calculateBoxWidth(overlay)) // Get height without rendering
+        val boxWidth = calculateBoxWidth(overlay)
+
+        val messageHeight = calculateTitleHeight(overlay, boxWidth)
+        val actionsHeight = overlay.getActionsHeight(boxWidth) // Get height without rendering
         return messageHeight + actionsHeight + PADDING
     }
 
@@ -236,8 +251,8 @@ object OverlayFeature {
         progressComplete: Boolean
     ) {
         val font = Minecraft.getInstance().font
-        val messageHeight = font.lineHeight + PADDING * 2
         val boxWidth = calculateBoxWidth(overlay)
+        val messageHeight = calculateTitleHeight(overlay, boxWidth)
         val totalHeight = calculateTotalHeight(overlay)
 
         // Convert AWT Color to RGB int
@@ -309,6 +324,14 @@ object OverlayFeature {
         val messageX = x + (boxWidth - textWidth) / 2
         val messageY = y + PADDING
         graphics.text(font, messageText, messageX, messageY, 0xFFFFFFFF.toInt())
+
+        // Render the optional description below the message, wrapping it to the overlay width.
+        getDescriptionLines(overlay, boxWidth).forEachIndexed { index, line ->
+            val lineWidth = font.width(line)
+            val lineX = x + (boxWidth - lineWidth) / 2
+            val lineY = messageY + font.lineHeight + PADDING / 2 + index * font.lineHeight
+            graphics.text(font, line, lineX, lineY, 0xFFBFBFBF.toInt())
+        }
 
         // Render actions
         overlay.renderActions(graphics, x + PADDING, separatorY + PADDING, boxWidth - PADDING * 2)

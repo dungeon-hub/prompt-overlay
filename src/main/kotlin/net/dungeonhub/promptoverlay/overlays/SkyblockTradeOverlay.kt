@@ -19,7 +19,8 @@ class SkyblockTradeOverlay(trader: String, val acceptCommand: String): Acceptabl
     }
 
     override val borderColor: Color get() = Color(OverlayCategory.tradeColor)
-    override val message = Component.literal("${ChatFormatting.stripFormatting(trader)} sent you a trade request")
+    override val message = Component.literal("Trade request")
+    override val description = Component.literal("From ${ChatFormatting.stripFormatting(trader)}")
 
     override val firstText: String
         get() {

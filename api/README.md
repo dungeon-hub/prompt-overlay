@@ -34,11 +34,13 @@ Optionally, include it in your `suggests` block of your `fabric.mod.json` to sho
 
 ```kotlin
 import net.dungeonhub.promptoverlay.api.render.*
+import net.minecraft.network.chat.Component
 import java.awt.Color
 
 class MyCustomOverlay : TwoActionsOverlay, AcceptableOverlay, DeniableOverlay {
     override val borderColor = Color.CYAN
-    override val message = "Player sent you a trade request!"
+    override val message = Component.literal("Trade request")
+    override val description = Component.literal("Player sent you a trade request!")
     override val firstText = "[${acceptKey()}] Accept"
     override val secondText = "[${denyKey()}] Deny"
     
@@ -51,6 +53,9 @@ class MyCustomOverlay : TwoActionsOverlay, AcceptableOverlay, DeniableOverlay {
     }
 }
 ```
+
+`description` is always a `Component`. Overlays that do not need a description can omit the
+property, which then uses the default `Component.empty()`.
 
 **3. Register your overlay with Prompt Overlay's rendering system**
 
@@ -71,6 +76,10 @@ Those errors should usually not happen, and are rare edge-cases of using a modif
 
 - **`Overlay`**: Base interface for all overlays
 - **`AcceptableOverlay`**: Adds accept action capability
-- **`DeniableOverlay`**: Adds deny action capability  
+- **`DeniableOverlay`**: Adds deny action capability
+- **`ZeroActionsOverlay`**: Template for informational overlays with only the dismiss action
 - **`OneActionOverlay`**: Template for overlays with one custom action (accept or deny) + dismiss
 - **`TwoActionsOverlay`**: Template for overlays with two custom actions (accept and deny) + dismiss
+- **`ThreeActionsOverlay`**: Template for overlays with three custom actions + dismiss
+- **`FourActionsOverlay`**: Template for overlays with four custom actions + dismiss
+- **`FiveActionsOverlay`**: Template for overlays with five custom actions + dismiss

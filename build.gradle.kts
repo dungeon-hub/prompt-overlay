@@ -76,6 +76,7 @@ dependencies {
     //Testing
     testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.1")
     testImplementation(kotlin("test"))
+    testImplementation("org.mockito:mockito-core:5.20.0")
 }
 
 tasks.processResources {

@@ -22,21 +22,15 @@ interface FiveActionsOverlay : FourActionsOverlay {
     }
 
     override fun getActionsWidth(font: Font): Int {
-        val dismissKeyName = PromptOverlayApi.getKeyMappingProvider().dismissKeyName
-        val dismissText = "[$dismissKeyName] Dismiss"
-
         val firstLineWidth = font.width(firstText) + font.width(secondText) + 20
         val secondLineWidth = font.width(thirdText) + font.width(fourthText) + 20
-        val thirdLineWidth = font.width(fifthText) + font.width(dismissText) + 20
+        val thirdLineWidth = font.width(fifthText) + font.width(dismissText()) + 20
 
         return max(max(firstLineWidth, secondLineWidth), thirdLineWidth)
     }
 
     override fun renderActions(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int) {
         val font = Minecraft.getInstance().font
-
-        val dismissKeyName = PromptOverlayApi.getKeyMappingProvider().dismissKeyName
-        val dismissText = "[$dismissKeyName] Dismiss"
 
         val textColor = 0xFFFFFFFF.toInt()
 
@@ -56,10 +50,10 @@ interface FiveActionsOverlay : FourActionsOverlay {
 
         // Third line: dismiss centered below
         val thirdLineY = y + (font.lineHeight + 4) * 2
-        val thirdLineWidth = font.width(fifthText) + font.width(dismissText) + 20
+        val thirdLineWidth = font.width(fifthText) + font.width(dismissText()) + 20
         val thirdLineX = x + (width - thirdLineWidth) / 2
 
         graphics.text(font, fifthText, thirdLineX, thirdLineY, textColor)
-        graphics.text(font, dismissText, thirdLineX + font.width(fifthText) + 20, thirdLineY, textColor)
+        graphics.text(font, dismissText(), thirdLineX + font.width(fifthText) + 20, thirdLineY, textColor)
     }
 }

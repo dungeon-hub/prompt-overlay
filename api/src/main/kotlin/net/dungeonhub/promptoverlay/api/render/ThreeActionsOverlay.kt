@@ -24,20 +24,14 @@ interface ThreeActionsOverlay : Overlay, TwoOptionsOverlay {
     }
 
     override fun getActionsWidth(font: Font): Int {
-        val dismissKeyName = PromptOverlayApi.getKeyMappingProvider().dismissKeyName
-        val dismissText = "[$dismissKeyName] Dismiss"
-
         val firstLineWidth = font.width(firstText) + font.width(secondText) + 20
-        val secondLineWidth = font.width(thirdText) + font.width(dismissText) + 20
+        val secondLineWidth = font.width(thirdText) + font.width(dismissText()) + 20
 
         return max(firstLineWidth, secondLineWidth)
     }
 
     override fun renderActions(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int) {
         val font = Minecraft.getInstance().font
-
-        val dismissKeyName = PromptOverlayApi.getKeyMappingProvider().dismissKeyName
-        val dismissText = "[$dismissKeyName] Dismiss"
 
         val textColor = 0xFFFFFFFF.toInt()
 
@@ -49,10 +43,10 @@ interface ThreeActionsOverlay : Overlay, TwoOptionsOverlay {
         graphics.text(font, secondText, firstLineStartX + font.width(firstText) + 20, y, textColor)
 
         val secondLineY = y + font.lineHeight + 4 // 4px spacing between lines
-        val secondLineWidth = font.width(thirdText) + font.width(dismissText) + 20 // 20px spacing
+        val secondLineWidth = font.width(thirdText) + font.width(dismissText()) + 20 // 20px spacing
         val secondLineX = x + (width - secondLineWidth) / 2
 
         graphics.text(font, thirdText, secondLineX, secondLineY, textColor)
-        graphics.text(font, dismissText, secondLineX + font.width(thirdText) + 20, secondLineY, textColor)
+        graphics.text(font, dismissText(), secondLineX + font.width(thirdText) + 20, secondLineY, textColor)
     }
 }
