@@ -18,7 +18,8 @@ object KeyMappingService : KeyMappingProvider {
         "key.prompt-overlay.accept",
         InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_Z,
-        category
+        category,
+        0
     )
     override val acceptKeyName: String get() = acceptKey.translatedKeyMessage.string
 
@@ -26,7 +27,8 @@ object KeyMappingService : KeyMappingProvider {
         "key.prompt-overlay.deny",
         InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_N,
-        category
+        category,
+        1
     )
     override val denyKeyName: String get() = denyKey.translatedKeyMessage.string
 
@@ -34,7 +36,8 @@ object KeyMappingService : KeyMappingProvider {
         "key.prompt-overlay.dismiss",
         InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_X,
-        category
+        category,
+        2
     )
     override val dismissKeyName: String get() = dismissKey.translatedKeyMessage.string
 
@@ -42,7 +45,8 @@ object KeyMappingService : KeyMappingProvider {
         "key.prompt-overlay.first-option",
         InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_1,
-        category
+        category,
+        3
     )
     override val firstOptionKeyName: String get() = firstOptionKey.translatedKeyMessage.string
 
@@ -50,7 +54,8 @@ object KeyMappingService : KeyMappingProvider {
         "key.prompt-overlay.second-option",
         InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_2,
-        category
+        category,
+        4
     )
     override val secondOptionKeyName: String get() = secondOptionKey.translatedKeyMessage.string
 
@@ -58,7 +63,8 @@ object KeyMappingService : KeyMappingProvider {
         "key.prompt-overlay.third-option",
         InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_3,
-        category
+        category,
+        5
     )
     override val thirdOptionKeyName: String get() = thirdOptionKey.translatedKeyMessage.string
 
@@ -66,7 +72,8 @@ object KeyMappingService : KeyMappingProvider {
         "key.prompt-overlay.fourth-option",
         InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_4,
-        category
+        category,
+        6
     )
     override val fourthOptionKeyName: String get() = fourthOptionKey.translatedKeyMessage.string
 
@@ -74,7 +81,8 @@ object KeyMappingService : KeyMappingProvider {
         "key.prompt-overlay.fifth-option",
         InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_5,
-        category
+        category,
+        7
     )
     override val fifthOptionKeyName: String get() = fifthOptionKey.translatedKeyMessage.string
 
