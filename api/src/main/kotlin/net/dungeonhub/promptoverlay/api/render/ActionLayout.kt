@@ -13,8 +13,11 @@ internal object ActionLayout {
         return lineCount * (Minecraft.getInstance().font.lineHeight + LINE_SPACING)
     }
 
-    fun width(font: Font, actions: List<String>): Int = rows(actions).maxOf { row ->
-        row.sumOf(font::width) + ACTION_SPACING * (row.size - 1)
+    fun width(font: Font, actions: List<String>): Int {
+        if (actions.isEmpty()) return 0
+        return rows(actions).maxOf { row ->
+            row.sumOf(font::width) + ACTION_SPACING * (row.size - 1)
+        }
     }
 
     fun render(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, actions: List<String>) {
