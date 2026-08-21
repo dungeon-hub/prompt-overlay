@@ -7,7 +7,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 internal object ActionLayout {
     private const val ACTION_SPACING = 20
     private const val LINE_SPACING = 4
-    private const val TEXT_COLOR = -1
+    private const val TEXT_COLOR = 0xFFFFFFFF.toInt()
 
     fun height(lineCount: Int): Int {
         return lineCount * (Minecraft.getInstance().font.lineHeight + LINE_SPACING)
