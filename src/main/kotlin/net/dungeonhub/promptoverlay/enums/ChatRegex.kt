@@ -197,7 +197,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
     TrapperRestart(Regex("^Killing the animal rewarded you \\d+ pelts"), FeaturesToggle::trapperHunt, action=action@{ _, _ ->
         val cooldown = 20.seconds - (Clock.System.now() - (lastTrapperQuest ?: Clock.System.now()))
 
-        ScheduleHandler.scheduler.launch {
+        ScheduleHandler.scheduler.launch { // TODO only works when having a cookie buff
             delay(cooldown)
 
             OverlayFeature.setOverlay(TrapperRestartOverlay())

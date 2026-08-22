@@ -8,6 +8,7 @@ import net.minecraft.ChatFormatting
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.awt.Color
+import kotlin.time.Duration.Companion.seconds
 
 class SkyblockTradeOverlay(trader: String, val acceptCommand: String): AcceptableOverlay, OneActionOverlay {
     override fun accept() {
@@ -21,6 +22,7 @@ class SkyblockTradeOverlay(trader: String, val acceptCommand: String): Acceptabl
     override val borderColor: Color get() = Color(OverlayCategory.tradeColor)
     override val message = Component.literal("Trade request")
     override val description = Component.literal("From ${ChatFormatting.stripFormatting(trader)}")
+    override val maxDisplayDuration = 10.seconds
 
     override val firstText: String
         get() {

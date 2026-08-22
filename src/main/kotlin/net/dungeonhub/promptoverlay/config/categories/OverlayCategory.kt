@@ -46,7 +46,7 @@ object OverlayCategory : CategoryKt("overlay") {
     val overlayDisplayDuration by int("overlay_display_duration", 10) {
         name = Literal("Overlay Display Duration")
         description = Literal("How long (in seconds) the prompt is displayed before being automatically dismissed.")
-        range = 3..45
+        range = 3..90
         slider = true
     }
 

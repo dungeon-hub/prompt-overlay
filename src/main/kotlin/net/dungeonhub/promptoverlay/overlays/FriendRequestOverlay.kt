@@ -8,11 +8,13 @@ import net.dungeonhub.promptoverlay.service.KeyMappingService
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.awt.Color
+import kotlin.time.Duration.Companion.minutes
 
 class FriendRequestOverlay(val from: String): AcceptableOverlay, DeniableOverlay, TwoActionsOverlay {
     override val borderColor: Color = Color(OverlayCategory.friendColor)
     override val message = Component.literal("Friend request")
     override val description = Component.literal("From $from")
+    override val maxDisplayDuration = 5.minutes
 
     override fun accept() {
         Minecraft.getInstance().execute {

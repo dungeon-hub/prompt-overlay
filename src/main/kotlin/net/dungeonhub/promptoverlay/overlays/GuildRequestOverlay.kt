@@ -7,6 +7,7 @@ import net.dungeonhub.promptoverlay.service.KeyMappingService
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.awt.Color
+import kotlin.time.Duration.Companion.minutes
 
 class GuildRequestOverlay(val inviter: String, guildName: String?) : AcceptableOverlay, OneActionOverlay {
     override fun accept() {
@@ -18,6 +19,7 @@ class GuildRequestOverlay(val inviter: String, guildName: String?) : AcceptableO
     override val borderColor: Color = Color(OverlayCategory.guildColor)
     override val message = Component.literal("Guild invite")
     override val description = Component.literal("$inviter invited you to ${guildName ?: "their guild"}")
+    override val maxDisplayDuration = 5.minutes
 
     override val firstText: String
         get() {

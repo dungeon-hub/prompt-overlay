@@ -7,6 +7,7 @@ import net.dungeonhub.promptoverlay.service.KeyMappingService
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.awt.Color
+import kotlin.time.Duration.Companion.seconds
 
 class PartyInviteOverlay(val inviter: String) : AcceptableOverlay, OneActionOverlay {
     override fun accept() {
@@ -18,6 +19,7 @@ class PartyInviteOverlay(val inviter: String) : AcceptableOverlay, OneActionOver
     override val borderColor: Color get() = Color(OverlayCategory.partyColor)
     override val message = Component.literal("Party invite")
     override val description = Component.literal("From $inviter")
+    override val maxDisplayDuration = 60.seconds
 
     override val firstText: String
         get() {

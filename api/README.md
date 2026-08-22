@@ -1,10 +1,10 @@
 # Prompt Overlay API
 
-API for creating custom overlays that integrate with the Prompt Overlay mod. Your mod users will be able to interact with your overlays using the keybindings configured in Prompt Overlay.
+The Prompt Overlay API lets Fabric mods show custom prompts that use the keybindings configured by Prompt Overlay. An integration can remain optional: when Prompt Overlay is absent or rejects the overlay, `setOverlay` returns `false` so the caller can use its normal fallback.
 
-## Usage
+## Add the dependency
 
-**1. Add the dependency to your `build.gradle.kts`:**
+The artifact is published to Maven Central. Keep the API version separate from your mod version:
 
 ```kotlin
 repositories {
@@ -12,74 +12,106 @@ repositories {
 }
 
 dependencies {
-    include(implementation("net.dungeon-hub.prompt-overlay:api:${minecraft_version}-${version}"))
+    include(implementation("net.dungeon-hub.prompt-overlay:api:${minecraft_version}-${promptOverlayApiVersion}"))
 }
 ```
 
-> We are using `include` here for simplicity. You are free to use a shadowed JAR as well.
+For example, the API version in this repository produces version `26.1.2-0.2.0`.
 
-Optionally, include it in your `suggests` block of your `fabric.mod.json` to show users that they can use this mod:
+`include` makes optional integration straightforward because the small API is available even when Prompt Overlay is not installed. A shadowed JAR works too. If Prompt Overlay is a required dependency, use `implementation` without `include` and declare it in `depends` instead.
 
-```
-"suggests": {
+For optional integration, advertise Prompt Overlay in `fabric.mod.json`:
+
+```json
+{
+  "suggests": {
     "prompt-overlay": "*"
+  }
 }
 ```
 
-> Note: This guide focuses on you adding this mod as an optional dependency.\
-> Due to this, we're including the API code in your JAR, so that you can prompt an overlay without users having the mod installed.\
-> If you require this mod for your mod to function, include it in your `depends` in your `fabric.mod.json` instead and only use `implementation()` (instead of `include(implementation())`) here.
+## Create and show an overlay
 
-**2. Create your custom overlay:**
+This example uses the built-in two-action layout and limits the prompt lifetime because a trade request may expire:
 
 ```kotlin
+import kotlin.time.Duration.Companion.seconds
+import net.dungeonhub.promptoverlay.PromptOverlayApi
 import net.dungeonhub.promptoverlay.api.render.*
 import net.minecraft.network.chat.Component
 import java.awt.Color
 
-class MyCustomOverlay : TwoActionsOverlay, AcceptableOverlay, DeniableOverlay {
+class TradeRequestOverlay : TwoActionsOverlay, AcceptableOverlay, DeniableOverlay {
     override val borderColor = Color.CYAN
     override val message = Component.literal("Trade request")
     override val description = Component.literal("Player sent you a trade request!")
-    override val firstText = "[${acceptKey()}] Accept"
-    override val secondText = "[${denyKey()}] Deny"
-    
+    override val maxDisplayDuration = 15.seconds
+    override val firstText get() = "[${acceptKey()}] Accept"
+    override val secondText get() = "[${denyKey()}] Deny"
+
     override fun accept() {
-        // Handle accept action
+        // Accept the request.
     }
-    
+
     override fun deny() {
-        // Handle deny action
+        // Deny the request.
+    }
+
+    override fun dismiss() {
+        // Optional action when the overlay is dismissed.
     }
 }
+
+val shown = PromptOverlayApi.setOverlay(TradeRequestOverlay())
+if (!shown) {
+    // Preserve the original chat prompt or use another fallback.
+}
 ```
+
+Call `setOverlay` where the prompt originates. Prompt Overlay catches integration errors, reports them to the user, and returns `false` rather than requiring an installed-mod check in the caller.
 
 `description` is always a `Component`. Overlays that do not need a description can omit the
 property, which then uses the default `Component.empty()`.
 
-**3. Register your overlay with Prompt Overlay's rendering system**
+Call `setOverlay` where the prompt originates. Prompt Overlay catches integration errors, reports them to the user, and returns `false` rather than requiring an installed-mod check in the caller.
+
+## Prompt lifetime
+
+Every `Overlay` must provide `message` and `borderColor`. It can also provide a maximum lifetime when the underlying prompt expires:
+
+| Property             | Default | Purpose                                                                                                                                                                                                       |
+|----------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `maxDisplayDuration` | `null`  | Positive, finite upper bound for automatic dismissal. The effective duration is the shorter of this limit and the user's configured duration. `null` or an invalid duration applies no prompt-specific limit. |
+
+Only set this property when the prompt stops being actionable after a known period. It never makes an overlay remain visible longer than the user's preference.
+
+## Overlay interfaces
+
+- `Overlay`: base rendering and lifecycle contract.
+- `AcceptableOverlay` and `DeniableOverlay`: accept/deny callbacks and configured key names.
+- `ZeroActionsOverlay`: informational layout with only the configured dismiss action.
+- `OneActionOverlay` and `TwoActionsOverlay`: layouts for one or two actions plus dismiss.
+- `OneOptionOverlay` and `TwoOptionsOverlay`: selection callbacks mixed into action layouts.
+- `ThreeActionsOverlay`, `FourActionsOverlay`, and `FiveActionsOverlay`: multi-choice layouts with configured number-key names.
+
+The action templates render labels but do not perform actions themselves. Implement the corresponding callback (`accept`, `deny`, `firstOption`, and so on); Prompt Overlay invokes it when the configured key is pressed.
+
+### Informational overlays
+
+Use `ZeroActionsOverlay` when a prompt only presents information and does not offer a custom action. It renders a single dismiss label using the user's configured dismiss key, so no action text properties or action callback interfaces are required:
 
 ```kotlin
-import net.dungeonhub.promptoverlay.PromptOverlayApi
+class InformationOverlay : ZeroActionsOverlay {
+    override val borderColor = Color.YELLOW
+    override val message = Component.literal("Information")
+    override val description = Component.literal("The event has started.")
 
-PromptOverlayApi.setOverlay(MyCustomOverlay())
+    override fun dismiss() {
+        // Optional cleanup when the user dismisses the overlay.
+    }
+}
+
+PromptOverlayApi.setOverlay(InformationOverlay())
 ```
 
-You add this piece of code in the place where you want your users to get a popup to accept or deny a request - and that's it!
-
-The API package you included in step 1 already handles all cases: If the mod isn't (properly) loaded, the `setOverlay()` method returns false, in case you need to handle the confirmation in another way.
-In case there are errors, the user will be notified in the chat, and the method returns false as well, to make sure that your mod can properly use the fallback solution.
-Those errors should usually not happen, and are rare edge-cases of using a modified version of the API or me accidentally not implementing a new version with backwards-compatibility in mind.
-
-
-## Available Overlay Types
-
-- **`Overlay`**: Base interface for all overlays
-- **`AcceptableOverlay`**: Adds accept action capability
-- **`DeniableOverlay`**: Adds deny action capability
-- **`ZeroActionsOverlay`**: Template for informational overlays with only the dismiss action
-- **`OneActionOverlay`**: Template for overlays with one custom action (accept or deny) + dismiss
-- **`TwoActionsOverlay`**: Template for overlays with two custom actions (accept and deny) + dismiss
-- **`ThreeActionsOverlay`**: Template for overlays with three custom actions + dismiss
-- **`FourActionsOverlay`**: Template for overlays with four custom actions + dismiss
-- **`FiveActionsOverlay`**: Template for overlays with five custom actions + dismiss
+The `dismiss` implementation is optional. Prompt Overlay removes the overlay after the configured dismiss key is pressed regardless of whether the callback is overridden.
