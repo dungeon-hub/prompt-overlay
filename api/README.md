@@ -79,9 +79,9 @@ Call `setOverlay` where the prompt originates. Prompt Overlay catches integratio
 
 Every `Overlay` must provide `message` and `borderColor`. It can also provide a maximum lifetime when the underlying prompt expires:
 
-| Property | Default | Purpose |
-| --- | --- | --- |
-| `maxDisplayDuration` | `null` | Positive, finite upper bound for automatic dismissal. The effective duration is the shorter of this limit and the user's configured duration. `null` or an invalid duration applies no prompt-specific limit. |
+| Property             | Default | Purpose                                                                                                                                                                                                       |
+|----------------------|---------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `maxDisplayDuration` | `null`  | Positive, finite upper bound for automatic dismissal. The effective duration is the shorter of this limit and the user's configured duration. `null` or an invalid duration applies no prompt-specific limit. |
 
 Only set this property when the prompt stops being actionable after a known period. It never makes an overlay remain visible longer than the user's preference.
 

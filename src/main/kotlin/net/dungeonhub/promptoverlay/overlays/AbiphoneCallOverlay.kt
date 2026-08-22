@@ -6,6 +6,7 @@ import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.awt.Color
+import kotlin.time.Duration.Companion.seconds
 
 class AbiphoneCallOverlay(caller: String?, val acceptCommand: String) : AcceptableOverlay, OneActionOverlay {
     override fun accept() {
@@ -20,4 +21,5 @@ class AbiphoneCallOverlay(caller: String?, val acceptCommand: String) : Acceptab
     override val message = Component.literal("Incoming call")
     override val description = caller?.let { Component.literal("From $it") } ?: Component.empty()
     override val firstText get() = "[${acceptKey()}] Accept"
+    override val maxDisplayDuration = 7.seconds
 }
