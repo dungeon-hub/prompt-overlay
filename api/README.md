@@ -12,7 +12,7 @@ repositories {
 }
 
 dependencies {
-    include(implementation("net.dungeon-hub.prompt-overlay:api:${minecraft_version}-${version}"))
+    include(implementation("net.dungeon-hub.prompt-overlay:api:${minecraft_version}-${promptOverlayApiVersion}"))
 }
 ```
 
