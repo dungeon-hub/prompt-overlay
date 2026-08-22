@@ -52,6 +52,7 @@ object FeaturesToggle : ObjectKt() {
 
     val trapperHunt by boolean("show_trapper_hunt", true) {
         name = Literal("Trapper Hunt")
+        description = Literal("Gives you a prompt to call Trevor after another hunt task is available. Note: Requires you to have an active Cookie Buff.")
     }
 
     val travelingZoo by boolean("show_traveling_zoo_warp", true) {
