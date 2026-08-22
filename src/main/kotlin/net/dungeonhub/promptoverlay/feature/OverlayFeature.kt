@@ -78,7 +78,7 @@ object OverlayFeature {
         }
 
         hideMessageJob = scheduler.launch {
-            delay(effectiveDisplayDuration(overlay))
+            delay(autoDismissDelay(overlay))
 
             if(currentOverlay == overlay) {
                 removeOverlay(RemoveType.Dismiss)
@@ -225,7 +225,7 @@ object OverlayFeature {
 
         val dismissProgress = if (!isAnimatingOut) {
             val elapsedDismissMs = System.currentTimeMillis() - autoDismissStartTime
-            (elapsedDismissMs.toDouble() / effectiveDisplayDuration(overlay).inWholeMilliseconds).coerceIn(0.0, 1.0)
+            dismissProgress(elapsedDismissMs, overlay)
         } else 1.0
 
         renderOverlay(graphics, overlay, x, y, dismissProgress, isAnimatingOut)
@@ -337,11 +337,16 @@ object OverlayFeature {
         overlay.renderActions(graphics, x + PADDING, separatorY + PADDING, boxWidth - PADDING * 2)
     }
 
-    private fun effectiveDisplayDuration(overlay: Overlay) =
+    internal fun effectiveDisplayDuration(overlay: Overlay) =
         overlay.maxDisplayDuration
             ?.takeIf { it.isPositive() && it.isFinite() }
             ?.coerceAtMost(OverlayCategory.overlayDisplayDuration.seconds)
             ?: OverlayCategory.overlayDisplayDuration.seconds
+
+    internal fun autoDismissDelay(overlay: Overlay) = effectiveDisplayDuration(overlay)
+
+    internal fun dismissProgress(elapsedMilliseconds: Long, overlay: Overlay) =
+        (elapsedMilliseconds.toDouble() / effectiveDisplayDuration(overlay).inWholeMilliseconds).coerceIn(0.0, 1.0)
 
     private fun easeInOutCubic(t: Double): Double {
         return if (t < 0.5) {

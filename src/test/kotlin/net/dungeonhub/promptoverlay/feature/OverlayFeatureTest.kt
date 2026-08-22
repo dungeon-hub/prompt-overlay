@@ -2,12 +2,15 @@ package net.dungeonhub.promptoverlay.feature
 
 import java.awt.Color
 import java.lang.reflect.Field
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertSame
 import net.dungeonhub.promptoverlay.api.render.Overlay
+import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -160,6 +163,65 @@ class OverlayFeatureTest {
         assertEquals(200, overlay.heightWidth)
     }
 
+    @Test
+    fun `null overlay duration uses configured duration`() {
+        assertEquals(configuredDuration, OverlayFeature.effectiveDisplayDuration(TestOverlay(0)))
+    }
+
+    @Test
+    fun `non-positive overlay durations use configured duration`() {
+        listOf(Duration.ZERO, (-1).seconds).forEach { duration ->
+            assertEquals(
+                configuredDuration,
+                OverlayFeature.effectiveDisplayDuration(TestOverlay(0, maxDisplayDuration = duration)),
+            )
+        }
+    }
+
+    @Test
+    fun `infinite overlay duration uses configured duration`() {
+        assertEquals(
+            configuredDuration,
+            OverlayFeature.effectiveDisplayDuration(TestOverlay(0, maxDisplayDuration = Duration.INFINITE)),
+        )
+    }
+
+    @Test
+    fun `overlay duration shorter than configured duration is preserved`() {
+        val shorterDuration = configuredDuration - 1.seconds
+
+        assertEquals(
+            shorterDuration,
+            OverlayFeature.effectiveDisplayDuration(TestOverlay(0, maxDisplayDuration = shorterDuration)),
+        )
+    }
+
+    @Test
+    fun `overlay duration longer than configured duration is capped`() {
+        val overlay = TestOverlay(0, maxDisplayDuration = configuredDuration + 1.seconds)
+
+        assertEquals(configuredDuration, OverlayFeature.effectiveDisplayDuration(overlay))
+    }
+
+    @Test
+    fun `auto-dismiss scheduling uses effective display duration`() {
+        val overlay = TestOverlay(0, maxDisplayDuration = configuredDuration - 1.seconds)
+
+        assertEquals(OverlayFeature.effectiveDisplayDuration(overlay), OverlayFeature.autoDismissDelay(overlay))
+    }
+
+    @Test
+    fun `progress calculation uses effective display duration`() {
+        val overlay = TestOverlay(0, maxDisplayDuration = configuredDuration - 2.seconds)
+        val effectiveDuration = OverlayFeature.effectiveDisplayDuration(overlay)
+
+        assertEquals(
+            0.5,
+            OverlayFeature.dismissProgress(effectiveDuration.inWholeMilliseconds / 2, overlay),
+        )
+        assertEquals(1.0, OverlayFeature.dismissProgress(effectiveDuration.inWholeMilliseconds, overlay))
+    }
+
     /**
      * Minecraft exposes [Minecraft.font] and [Font.lineHeight] as final fields.
      * They cannot be stubbed through Mockito because production code reads them
@@ -186,6 +248,7 @@ class OverlayFeatureTest {
         private val actionsHeight: Int = 0,
         messageText: String = "A title that can be measured",
         descriptionText: String = "",
+        override val maxDisplayDuration: Duration? = null,
     ) : Overlay {
         override val borderColor: Color = Color.WHITE
         override val message: Component = Component.literal(messageText)
@@ -207,4 +270,7 @@ class OverlayFeatureTest {
 
         override fun renderActions(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int) = Unit
     }
+
+    private val configuredDuration
+        get() = OverlayCategory.overlayDisplayDuration.seconds
 }
