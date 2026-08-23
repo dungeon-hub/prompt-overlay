@@ -1,6 +1,6 @@
 # Prompt Overlay API
 
-The Prompt Overlay API lets Fabric mods show custom prompts that use the keybindings configured by Prompt Overlay. An integration can remain optional: when Prompt Overlay is absent or rejects the overlay, `setOverlay` returns `false` so the caller can use its normal fallback.
+The Prompt Overlay API lets Fabric mods show custom prompts that use the keybindings configured by Prompt Overlay. An integration can remain optional: `setOverlay` reports whether the prompt was queued, Prompt Overlay is absent, or an error prevented the prompt from being queued, so the caller can use its normal fallback.
 
 ## Add the dependency
 
@@ -15,8 +15,6 @@ dependencies {
     include(implementation("net.dungeon-hub.prompt-overlay:api:${minecraft_version}-${promptOverlayApiVersion}"))
 }
 ```
-
-For example, the API version in this repository produces version `26.1.2-0.2.0`.
 
 `include` makes optional integration straightforward because the small API is available even when Prompt Overlay is not installed. A shadowed JAR works too. If Prompt Overlay is a required dependency, use `implementation` without `include` and declare it in `depends` instead.
 
@@ -37,6 +35,7 @@ This example uses the built-in two-action layout and limits the prompt lifetime 
 ```kotlin
 import kotlin.time.Duration.Companion.seconds
 import net.dungeonhub.promptoverlay.PromptOverlayApi
+import net.dungeonhub.promptoverlay.api.SetOverlayResult
 import net.dungeonhub.promptoverlay.api.render.*
 import net.minecraft.network.chat.Component
 import java.awt.Color
@@ -62,18 +61,28 @@ class TradeRequestOverlay : TwoActionsOverlay, AcceptableOverlay, DeniableOverla
     }
 }
 
-val shown = PromptOverlayApi.setOverlay(TradeRequestOverlay())
-if (!shown) {
-    // Preserve the original chat prompt or use another fallback.
+when (val result = PromptOverlayApi.setOverlay(TradeRequestOverlay())) {
+    SetOverlayResult.Queued -> Unit
+    SetOverlayResult.ModNotInstalled -> {
+        // Preserve the original chat prompt or use another fallback.
+    }
+    is SetOverlayResult.Error -> {
+        // Prompt Overlay reports the error to the user. The cause is also
+        // available as result.throwable if the integration needs to inspect it.
+    }
 }
 ```
 
-Call `setOverlay` where the prompt originates. Prompt Overlay catches integration errors, reports them to the user, and returns `false` rather than requiring an installed-mod check in the caller.
+Call `setOverlay` where the prompt originates. Its result is one of:
+
+- `SetOverlayResult.Queued`: the overlay handler accepted and queued the prompt.
+- `SetOverlayResult.ModNotInstalled`: Prompt Overlay is not installed. Use the calling mod's normal fallback.
+- `SetOverlayResult.Error`: Prompt Overlay is installed, but the prompt could not be queued. Prompt Overlay logs the cause, shows an error in chat, and exposes the cause through `throwable`.
+
+Because `ModNotInstalled` is a normal result, optional integrations do not need to check Fabric Loader before calling `setOverlay`. Handle both `ModNotInstalled` and `Error` if the original prompt should remain available whenever the overlay was not queued.
 
 `description` is always a `Component`. Overlays that do not need a description can omit the
 property, which then uses the default `Component.empty()`.
-
-Call `setOverlay` where the prompt originates. Prompt Overlay catches integration errors, reports them to the user, and returns `false` rather than requiring an installed-mod check in the caller.
 
 ## Prompt lifetime
 

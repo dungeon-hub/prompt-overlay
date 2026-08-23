@@ -2,6 +2,7 @@ package net.dungeonhub.promptoverlay
 
 import net.dungeonhub.promptoverlay.api.KeyMappingProvider
 import net.dungeonhub.promptoverlay.api.OverlayHandler
+import net.dungeonhub.promptoverlay.api.SetOverlayResult
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.ChatFormatting
@@ -38,24 +39,37 @@ object PromptOverlayApi {
     }
 
     @JvmStatic
-    fun setOverlay(overlay: Overlay): Boolean {
-        if(FabricLoader.getInstance().isModLoaded("prompt-overlay")) {
-            val overlayHandler = promptOverlay
-            if(overlayHandler != null) {
-                overlayHandler.setOverlay(overlay) // TODO add error handling (which then return false)
-                return true
-            } else {
-                logger.error("The Prompt Overload mod is installed, but no overlay handler is registered. Please update your mod.")
-                Minecraft.getInstance().execute {
-                    Minecraft.getInstance().gui.chat.addClientSystemMessage(Component.literal(
-                        "An error occurred while a mod tried to set an overlay - no overlay handler is registered. Please update your mods."
-                    ).withStyle(ChatFormatting.RED))
-                }
-                return false
-            }
-        } else {
-            return false
+    fun setOverlay(overlay: Overlay): SetOverlayResult {
+        if (!FabricLoader.getInstance().isModLoaded("prompt-overlay")) {
+            return SetOverlayResult.ModNotInstalled
         }
+
+        val overlayHandler = promptOverlay
+            ?: return overlayError(IllegalStateException("Prompt Overlay is installed, but no overlay handler is registered."))
+
+        return try {
+            overlayHandler.setOverlay(overlay)
+            SetOverlayResult.Queued
+        } catch (exception: Exception) {
+            overlayError(exception)
+        } catch (linkageError: LinkageError) {
+            // Linkage errors (for example NoSuchFieldError) are particularly important here: they can occur when a mod bundles an older API whose Overlay implementation lacks newer members.
+            overlayError(linkageError)
+        }
+    }
+
+    private fun overlayError(throwable: Throwable): SetOverlayResult.Error {
+        logger.error("An error occurred while a mod tried to queue an overlay.", throwable)
+
+        Minecraft.getInstance().execute {
+            Minecraft.getInstance().gui.chat.addClientSystemMessage(
+                Component.literal(
+                    "An error occurred while a mod tried to set an overlay. Please make sure that your mods are on their latest version."
+                ).withStyle(ChatFormatting.RED)
+            )
+        }
+
+        return SetOverlayResult.Error(throwable)
     }
 
     /**
