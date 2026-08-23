@@ -222,6 +222,12 @@ class OverlayFeatureTest {
         assertEquals(1.0, OverlayFeature.dismissProgress(effectiveDuration.inWholeMilliseconds, overlay))
     }
 
+    @Test
+    fun `badge count is capped at its maximum display value`() {
+        assertEquals("99", OverlayFeature.badgeText(99))
+        assertEquals("99+", OverlayFeature.badgeText(100))
+    }
+
     /**
      * Minecraft exposes [Minecraft.font] and [Font.lineHeight] as final fields.
      * They cannot be stubbed through Mockito because production code reads them

@@ -30,10 +30,10 @@ import kotlin.math.sin
 import kotlin.time.Duration.Companion.seconds
 
 object OverlayFeature {
-    var currentOverlay: Overlay? = null
-    private set
-    private var hidingOverlay: Overlay? = null
+    val currentOverlay: Overlay?
+        get() = queue.currentPrompt?.overlay
     private var hideMessageJob: Job? = null
+    private var transitionJob: Job? = null
 
     private var animationStartTime: Long = 0
     private var autoDismissStartTime: Long = 0
@@ -46,11 +46,25 @@ object OverlayFeature {
     private const val PADDING = 6
     private const val MIN_WIDTH = 150
     private const val MAX_WIDTH = 400
+    private const val MAX_BADGE_COUNT = 99
+    private const val BADGE_OUTLINE_COLOR = 0xB0000000.toInt()
+    private const val BADGE_BACKGROUND_COLOR = 0xFFE53935.toInt()
+    private const val BADGE_TEXT_SHADOW_COLOR = 0xC0000000.toInt()
+    private const val BADGE_TEXT_COLOR = 0xFFFFFFFF.toInt()
 
     private val supervisor = SupervisorJob()
     private val dispatcher = Executors.newFixedThreadPool(2).asCoroutineDispatcher()
 
     private val scheduler = CoroutineScope(supervisor + dispatcher)
+
+    private val queue = PromptQueueManager(
+        onShow = ::setCurrentOverlay,
+        onExit = ::removeCurrentOverlay,
+        onExitComplete = {
+            isAnimatingOut = false
+            animationOutType = null
+        },
+    )
 
     val customBackground = Identifier.fromNamespaceAndPath(MOD_ID, "textures/gui/prompt-background.png")
 
@@ -62,51 +76,44 @@ object OverlayFeature {
     }
 
     fun setOverlay(overlay: Overlay) {
-        if(currentOverlay != null) {
-            hidingOverlay = currentOverlay
-        }
+        queue.enqueue(overlay)
+    }
 
-        currentOverlay = overlay
+    private fun setCurrentOverlay(entry: PromptEntry) {
         animationStartTime = System.currentTimeMillis()
         autoDismissStartTime = System.currentTimeMillis()
         isAnimatingIn = true
         isAnimatingOut = false
         animationOutType = null
-
-        if(hideMessageJob != null) {
-            hideMessageJob?.cancel()
-        }
-
+        hideMessageJob?.cancel()
         hideMessageJob = scheduler.launch {
-            delay(autoDismissDelay(overlay))
-
-            if(currentOverlay == overlay) {
-                removeOverlay(RemoveType.Dismiss)
-            }
+            delay(autoDismissDelay(entry.overlay))
+            removeOverlay(entry.id, RemoveType.Dismiss)
         }
     }
 
     fun removeOverlay(type: RemoveType) {
-        if (currentOverlay == null) return
+        val entry = queue.currentPrompt ?: return
+        removeOverlay(entry.id, type)
+    }
 
-        hidingOverlay = currentOverlay
-        currentOverlay = null
+    private fun removeOverlay(id: Long, type: RemoveType) = queue.removePrompt(id, type)
+
+    private fun removeCurrentOverlay(entry: PromptEntry, type: RemoveType) {
+        hideMessageJob?.cancel()
         animationStartTime = System.currentTimeMillis()
         isAnimatingIn = false
         isAnimatingOut = true
         animationOutType = type
-
-        // Schedule cleanup after animation completes
-        scheduler.launch {
+        transitionJob?.cancel()
+        transitionJob = scheduler.launch {
             delay(ANIMATION_DURATION)
-            if (isAnimatingOut && animationOutType == type) {
-                currentOverlay = null
-                hidingOverlay = null
-                isAnimatingOut = false
-                animationOutType = null
-            }
+            queue.completeExit(entry.id)
         }
     }
+
+    internal fun removeOverlay(entry: PromptEntry, type: RemoveType) = removeOverlay(entry.id, type)
+    internal fun currentPrompt() = queue.currentPrompt
 
     fun calculateBoxWidth(overlay: Overlay): Int {
         val font = Minecraft.getInstance().font
@@ -149,7 +156,7 @@ object OverlayFeature {
     }
 
     fun render(graphics: GuiGraphicsExtractor) {
-        val overlay = if (isAnimatingOut) hidingOverlay else currentOverlay
+        val overlay = (if (isAnimatingOut) queue.outgoingPrompt else queue.currentPrompt)?.overlay
         overlay ?: return
 
         val minecraft = Minecraft.getInstance()
@@ -228,7 +235,7 @@ object OverlayFeature {
             dismissProgress(elapsedDismissMs, overlay)
         } else 1.0
 
-        renderOverlay(graphics, overlay, x, y, dismissProgress, isAnimatingOut)
+        renderOverlay(graphics, overlay, x, y, dismissProgress, isAnimatingOut, queue.waitingCount())
     }
 
     fun renderPreview(graphics: GuiGraphicsExtractor, overlay: Overlay, x: Int, y: Int, dismissProgress: Double = 0.5) {
@@ -248,7 +255,8 @@ object OverlayFeature {
         x: Int,
         y: Int,
         dismissProgress: Double,
-        progressComplete: Boolean
+        progressComplete: Boolean,
+        waitingCount: Int = 0,
     ) {
         val font = Minecraft.getInstance().font
         val boxWidth = calculateBoxWidth(overlay)
@@ -335,6 +343,26 @@ object OverlayFeature {
 
         // Render actions
         overlay.renderActions(graphics, x + PADDING, separatorY + PADDING, boxWidth - PADDING * 2)
+
+        if (waitingCount > 0) drawQueueBadge(graphics, x, y, boxWidth, totalHeight, waitingCount)
+    }
+
+    internal fun badgeText(waitingCount: Int) =
+        if (waitingCount > MAX_BADGE_COUNT) "$MAX_BADGE_COUNT+" else waitingCount.toString()
+
+    private fun drawQueueBadge(graphics: GuiGraphicsExtractor, x: Int, y: Int, width: Int, height: Int, waitingCount: Int) {
+        val font = Minecraft.getInstance().font
+        val text = badgeText(waitingCount)
+        val badgeHeight = maxOf(font.lineHeight + 2, 11)
+        val badgeWidth = maxOf(badgeHeight, font.width(text) + 6)
+        val left = x + width - 2 - badgeWidth / 2
+        val top = y + height - 2 - badgeHeight / 2
+        drawRoundedFill(graphics, left - 1, top - 1, badgeWidth + 2, badgeHeight + 2, badgeHeight / 2 + 1, BADGE_OUTLINE_COLOR)
+        drawRoundedFill(graphics, left, top, badgeWidth, badgeHeight, badgeHeight / 2, BADGE_BACKGROUND_COLOR)
+        val textX = left + (badgeWidth - font.width(text)) / 2
+        val textY = top + (badgeHeight - font.lineHeight) / 2
+        graphics.text(font, text, textX + 1, textY + 1, BADGE_TEXT_SHADOW_COLOR)
+        graphics.text(font, text, textX, textY, BADGE_TEXT_COLOR)
     }
 
     internal fun effectiveDisplayDuration(overlay: Overlay) =
