@@ -16,8 +16,6 @@ dependencies {
 }
 ```
 
-For example, the API version in this repository produces version `26.1.2-0.2.0`.
-
 `include` makes optional integration straightforward because the small API is available even when Prompt Overlay is not installed. A shadowed JAR works too. If Prompt Overlay is a required dependency, use `implementation` without `include` and declare it in `depends` instead.
 
 For optional integration, advertise Prompt Overlay in `fabric.mod.json`:
