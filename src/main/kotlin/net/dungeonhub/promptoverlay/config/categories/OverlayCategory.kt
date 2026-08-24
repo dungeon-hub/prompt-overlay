@@ -10,7 +10,7 @@ import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.enums.GlowStyle
 import net.dungeonhub.promptoverlay.enums.PromptAnimation
 import net.dungeonhub.promptoverlay.enums.PromptStyle
-import net.dungeonhub.promptoverlay.feature.OverlayFeature
+import net.dungeonhub.promptoverlay.feature.OverlayRenderer
 import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.gui.components.AbstractWidget
@@ -160,7 +160,7 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("Always assume that it's the Pride Month, giving you a special theme.")
     }
 
-    private class OverlayPreviewWidget(val overlay: Overlay = FriendRequestOverlay("Taubsie"), width: Int = OverlayFeature.calculateBoxWidth(overlay), height: Int = OverlayFeature.calculateTotalHeight(overlay)) :
+    private class OverlayPreviewWidget(val overlay: Overlay = FriendRequestOverlay("Taubsie"), width: Int = OverlayRenderer.calculateBoxWidth(overlay), height: Int = OverlayRenderer.calculateTotalHeight(overlay)) :
         AbstractWidget(0, 0, width, height, CommonComponents.EMPTY) {
 
         override fun extractWidgetRenderState(
@@ -169,7 +169,7 @@ object OverlayCategory : CategoryKt("overlay") {
             mouseY: Int,
             partialTick: Float
         ) {
-            OverlayFeature.renderPreview(graphics, overlay, x, y)
+            OverlayRenderer.renderPreview(graphics, overlay, x, y)
         }
 
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit

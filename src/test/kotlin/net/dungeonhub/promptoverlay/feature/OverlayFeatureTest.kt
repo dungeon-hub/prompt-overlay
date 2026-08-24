@@ -3,14 +3,19 @@ package net.dungeonhub.promptoverlay.feature
 import java.awt.Color
 import java.lang.reflect.Field
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertSame
+import kotlin.test.assertTrue
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
+import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
@@ -42,6 +47,8 @@ class OverlayFeatureTest {
 
     @AfterTest
     fun restoreMinecraft() {
+        OverlayRenderer.completeAnimatingIn()
+        OverlayRenderer.completeAnimatingOut()
         minecraftInstanceField.set(null, previousMinecraft)
     }
 
@@ -50,7 +57,7 @@ class OverlayFeatureTest {
         val overlay = TestOverlay(actionsWidth = 40)
         `when`(font.width(overlay.message)).thenReturn(200)
 
-        assertEquals(232, OverlayFeature.calculateBoxWidth(overlay))
+        assertEquals(232, OverlayRenderer.calculateBoxWidth(overlay))
         assertSame(font, overlay.widthFont)
     }
 
@@ -59,7 +66,7 @@ class OverlayFeatureTest {
         val overlay = TestOverlay(actionsWidth = 250)
         `when`(font.width(overlay.message)).thenReturn(100)
 
-        assertEquals(282, OverlayFeature.calculateBoxWidth(overlay))
+        assertEquals(282, OverlayRenderer.calculateBoxWidth(overlay))
     }
 
     @Test
@@ -68,7 +75,7 @@ class OverlayFeatureTest {
         `when`(font.width(overlay.message)).thenReturn(100)
         `when`(font.width(overlay.description)).thenReturn(240)
 
-        assertEquals(272, OverlayFeature.calculateBoxWidth(overlay))
+        assertEquals(272, OverlayRenderer.calculateBoxWidth(overlay))
     }
 
     @Test
@@ -77,7 +84,7 @@ class OverlayFeatureTest {
         `when`(font.width(overlay.message)).thenReturn(210)
         `when`(font.width(overlay.description)).thenReturn(80)
 
-        assertEquals(242, OverlayFeature.calculateBoxWidth(overlay))
+        assertEquals(242, OverlayRenderer.calculateBoxWidth(overlay))
     }
 
     @Test
@@ -87,8 +94,8 @@ class OverlayFeatureTest {
         val wideOverlay = TestOverlay(actionsWidth = 500)
         `when`(font.width(wideOverlay.message)).thenReturn(500)
 
-        assertEquals(150, OverlayFeature.calculateBoxWidth(narrowOverlay))
-        assertEquals(400, OverlayFeature.calculateBoxWidth(wideOverlay))
+        assertEquals(150, OverlayRenderer.calculateBoxWidth(narrowOverlay))
+        assertEquals(400, OverlayRenderer.calculateBoxWidth(wideOverlay))
     }
 
     @Test
@@ -96,15 +103,15 @@ class OverlayFeatureTest {
         val minimumOverlay = TestOverlay(actionsWidth = 118, messageText = "minimum")
         val maximumOverlay = TestOverlay(actionsWidth = 368, messageText = "maximum")
 
-        assertEquals(150, OverlayFeature.calculateBoxWidth(minimumOverlay))
-        assertEquals(400, OverlayFeature.calculateBoxWidth(maximumOverlay))
+        assertEquals(150, OverlayRenderer.calculateBoxWidth(minimumOverlay))
+        assertEquals(400, OverlayRenderer.calculateBoxWidth(maximumOverlay))
     }
 
     @Test
     fun `title height without description includes only line height and vertical padding`() {
         val overlay = TestOverlay(actionsWidth = 0)
 
-        assertEquals(21, OverlayFeature.calculateTitleHeight(overlay, 150))
+        assertEquals(21, OverlayRenderer.calculateTitleHeight(overlay, 150))
         verify(font, never()).split(overlay.description, 138)
     }
 
@@ -112,8 +119,8 @@ class OverlayFeatureTest {
     fun `blank description is treated as absent`() {
         val overlay = TestOverlay(actionsWidth = 0, descriptionText = "   ")
 
-        assertEquals(emptyList(), OverlayFeature.getDescriptionLines(overlay, 200))
-        assertEquals(21, OverlayFeature.calculateTitleHeight(overlay, 200))
+        assertEquals(emptyList(), OverlayRenderer.getDescriptionLines(overlay, 200))
+        assertEquals(21, OverlayRenderer.calculateTitleHeight(overlay, 200))
         verify(font, never()).split(overlay.description, 188)
     }
 
@@ -123,7 +130,7 @@ class OverlayFeatureTest {
         val line = mock(FormattedCharSequence::class.java)
         `when`(font.split(overlay.description, 188)).thenReturn(listOf(line))
 
-        assertEquals(listOf(line), OverlayFeature.getDescriptionLines(overlay, 200))
+        assertEquals(listOf(line), OverlayRenderer.getDescriptionLines(overlay, 200))
         verify(font).split(overlay.description, 188)
     }
 
@@ -133,7 +140,7 @@ class OverlayFeatureTest {
         val line = mock(FormattedCharSequence::class.java)
         `when`(font.split(overlay.description, 188)).thenReturn(listOf(line))
 
-        assertEquals(33, OverlayFeature.calculateTitleHeight(overlay, 200))
+        assertEquals(33, OverlayRenderer.calculateTitleHeight(overlay, 200))
     }
 
     @Test
@@ -142,7 +149,7 @@ class OverlayFeatureTest {
         val lines = List(3) { mock(FormattedCharSequence::class.java) }
         `when`(font.split(overlay.description, 188)).thenReturn(lines)
 
-        assertEquals(51, OverlayFeature.calculateTitleHeight(overlay, 200))
+        assertEquals(51, OverlayRenderer.calculateTitleHeight(overlay, 200))
     }
 
     @Test
@@ -150,7 +157,7 @@ class OverlayFeatureTest {
         val overlay = TestOverlay(actionsWidth = 180, actionsHeight = 37)
         `when`(font.width(overlay.message)).thenReturn(100)
 
-        assertEquals(64, OverlayFeature.calculateTotalHeight(overlay))
+        assertEquals(64, OverlayRenderer.calculateTotalHeight(overlay))
         assertEquals(212, overlay.heightWidth)
     }
 
@@ -160,7 +167,7 @@ class OverlayFeatureTest {
         val lines = List(2) { mock(FormattedCharSequence::class.java) }
         `when`(font.split(overlay.description, 188)).thenReturn(lines)
 
-        assertEquals(85, OverlayFeature.calculateTotalHeight(overlay))
+        assertEquals(85, OverlayRenderer.calculateTotalHeight(overlay))
         assertEquals(200, overlay.heightWidth)
     }
 
@@ -233,9 +240,102 @@ class OverlayFeatureTest {
     }
 
     @Test
+    fun `badge text handles a normal waiting count`() {
+        assertEquals("1", OverlayRenderer.badgeText(1))
+    }
+
+    @Test
+    fun `badge text remains capped for very large queues`() {
+        assertEquals("99+", OverlayRenderer.badgeText(Int.MAX_VALUE))
+    }
+
+    @Test
     fun `badge count is capped at its maximum display value`() {
-        assertEquals("99", OverlayFeature.badgeText(99))
-        assertEquals("99+", OverlayFeature.badgeText(100))
+        assertEquals("99", OverlayRenderer.badgeText(99))
+        assertEquals("99+", OverlayRenderer.badgeText(100))
+    }
+
+    @Test
+    fun `starting entrance animation initializes renderer state`() {
+        val enqueuedAt = Instant.fromEpochMilliseconds(1_000)
+        val currentTime = Instant.fromEpochMilliseconds(2_000)
+
+        OverlayRenderer.startAnimatingIn(enqueuedAt, currentTime)
+
+        assertEquals(currentTime, OverlayRenderer.animationStartTime)
+        assertEquals(enqueuedAt, OverlayRenderer.autoDismissStartTime)
+        assertTrue(OverlayRenderer.isAnimatingIn)
+        assertFalse(OverlayRenderer.isAnimatingOut)
+        assertNull(OverlayRenderer.animationOutType)
+    }
+
+    @Test
+    fun `exit animation replaces entrance state and records removal type`() {
+        OverlayRenderer.startAnimatingIn(Instant.fromEpochMilliseconds(1_000))
+        val currentTime = Instant.fromEpochMilliseconds(2_000)
+
+        OverlayRenderer.startAnimatingOut(RemoveType.Accept, currentTime)
+
+        assertEquals(currentTime, OverlayRenderer.animationStartTime)
+        assertFalse(OverlayRenderer.isAnimatingIn)
+        assertTrue(OverlayRenderer.isAnimatingOut)
+        assertEquals(RemoveType.Accept, OverlayRenderer.animationOutType)
+
+        OverlayRenderer.completeAnimatingOut()
+
+        assertFalse(OverlayRenderer.isAnimatingOut)
+        assertNull(OverlayRenderer.animationOutType)
+    }
+
+    @Test
+    fun `completing entrance animation leaves renderer inactive`() {
+        OverlayRenderer.startAnimatingIn(
+            enqueuedAt = Instant.fromEpochMilliseconds(1_000),
+            currentTime = Instant.fromEpochMilliseconds(2_000),
+        )
+
+        OverlayRenderer.completeAnimatingIn()
+
+        assertFalse(OverlayRenderer.isAnimatingIn)
+        assertFalse(OverlayRenderer.isAnimatingOut)
+        assertNull(OverlayRenderer.animationOutType)
+    }
+
+    @Test
+    fun `new entrance clears an unfinished exit animation`() {
+        OverlayRenderer.startAnimatingOut(
+            type = RemoveType.Deny,
+            currentTime = Instant.fromEpochMilliseconds(1_000),
+        )
+        val enqueuedAt = Instant.fromEpochMilliseconds(2_000)
+        val currentTime = Instant.fromEpochMilliseconds(3_000)
+
+        OverlayRenderer.startAnimatingIn(enqueuedAt, currentTime)
+
+        assertTrue(OverlayRenderer.isAnimatingIn)
+        assertFalse(OverlayRenderer.isAnimatingOut)
+        assertNull(OverlayRenderer.animationOutType)
+        assertEquals(currentTime, OverlayRenderer.animationStartTime)
+        assertEquals(enqueuedAt, OverlayRenderer.autoDismissStartTime)
+    }
+
+    @Test
+    fun `starting exit does not replace auto-dismiss start time`() {
+        val enqueuedAt = Instant.fromEpochMilliseconds(1_000)
+        OverlayRenderer.startAnimatingIn(enqueuedAt, Instant.fromEpochMilliseconds(2_000))
+
+        OverlayRenderer.startAnimatingOut(
+            type = RemoveType.Dismiss,
+            currentTime = Instant.fromEpochMilliseconds(3_000),
+        )
+
+        assertEquals(enqueuedAt, OverlayRenderer.autoDismissStartTime)
+        assertEquals(RemoveType.Dismiss, OverlayRenderer.animationOutType)
+    }
+
+    @Test
+    fun `animation duration remains five hundred milliseconds`() {
+        assertEquals(500.milliseconds, OverlayRenderer.ANIMATION_DURATION)
     }
 
     /**
