@@ -24,11 +24,13 @@ internal class PromptQueueManager(
     var outgoingPrompt: PromptEntry? = null
         private set
 
+    @Synchronized
     fun enqueue(overlay: Overlay) {
         val entry = PromptEntry(nextId++, overlay, Clock.System.now())
         if (currentPrompt == null && outgoingPrompt == null) setCurrentPrompt(entry) else pendingEntries.addLast(entry)
     }
 
+    @Synchronized
     fun removePrompt(id: Long, type: RemoveType): Boolean {
         val entry = currentPrompt ?: return false
         if (entry.id != id) return false
@@ -38,6 +40,7 @@ internal class PromptQueueManager(
         return true
     }
 
+    @Synchronized
     fun completeExit(id: Long) {
         if (outgoingPrompt?.id != id) return
         val completed = outgoingPrompt ?: return
@@ -46,6 +49,7 @@ internal class PromptQueueManager(
         if (pendingEntries.isNotEmpty()) setCurrentPrompt(pendingEntries.removeFirst())
     }
 
+    @Synchronized
     fun waitingCount(): Int = pendingEntries.size
 
     private fun setCurrentPrompt(entry: PromptEntry) {

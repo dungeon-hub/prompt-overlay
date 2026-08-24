@@ -1,6 +1,8 @@
 package net.dungeonhub.promptoverlay.feature
 
 import java.awt.Color
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -73,6 +75,39 @@ class PromptQueueManagerTest {
         fixture.manager.enqueue(TestOverlay("C"))
         assertFalse(fixture.manager.removePrompt(a.id, RemoveType.Accept))
         assertEquals(1, fixture.manager.waitingCount())
+    }
+
+    @Test
+    fun `concurrently enqueueing and completing an exit does not throw`() {
+        val enqueueStarted = CountDownLatch(1)
+        val failure = AtomicReference<Throwable?>()
+        lateinit var enqueueThread: Thread
+        lateinit var manager: PromptQueueManager
+        manager = PromptQueueManager({}, { _, _ -> }) {
+            enqueueThread = Thread {
+                enqueueStarted.countDown()
+                try {
+                    manager.enqueue(TestOverlay("C"))
+                } catch (throwable: Throwable) {
+                    failure.set(throwable)
+                }
+            }
+            enqueueThread.start()
+            enqueueStarted.await()
+        }
+        manager.enqueue(TestOverlay("A"))
+        manager.enqueue(TestOverlay("B"))
+        val aId = manager.currentPrompt!!.id
+        manager.removePrompt(aId, RemoveType.Dismiss)
+
+        try {
+            manager.completeExit(aId)
+        } catch (throwable: Throwable) {
+            failure.set(throwable)
+        }
+        enqueueThread.join()
+
+        assertNull(failure.get())
     }
 
     private class Fixture {
