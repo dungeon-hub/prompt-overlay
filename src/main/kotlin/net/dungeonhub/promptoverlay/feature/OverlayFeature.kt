@@ -27,7 +27,10 @@ import java.time.Month
 import java.util.concurrent.Executors
 import kotlin.math.pow
 import kotlin.math.sin
+import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 
 object OverlayFeature {
     val currentOverlay: Overlay?
@@ -35,8 +38,8 @@ object OverlayFeature {
     private var hideMessageJob: Job? = null
     private var transitionJob: Job? = null
 
-    private var animationStartTime: Long = 0
-    private var autoDismissStartTime: Long = 0
+    private var animationStartTime: Instant = Instant.DISTANT_PAST
+    private var autoDismissStartTime: Instant = Instant.DISTANT_PAST
     private var isAnimatingIn: Boolean = false
     private var isAnimatingOut: Boolean = false
     private var animationOutType: RemoveType? = null
@@ -80,14 +83,14 @@ object OverlayFeature {
     }
 
     private fun setCurrentOverlay(entry: PromptEntry) {
-        animationStartTime = System.currentTimeMillis()
-        autoDismissStartTime = System.currentTimeMillis()
+        animationStartTime = Clock.System.now()
+        autoDismissStartTime = entry.enqueuedAt
         isAnimatingIn = true
         isAnimatingOut = false
         animationOutType = null
         hideMessageJob?.cancel()
         hideMessageJob = scheduler.launch {
-            delay(autoDismissDelay(entry.overlay))
+            delay(remainingDisplayDuration(entry))
             removeOverlay(entry.id, RemoveType.Dismiss)
         }
     }
@@ -101,7 +104,7 @@ object OverlayFeature {
 
     private fun removeCurrentOverlay(entry: PromptEntry, type: RemoveType) {
         hideMessageJob?.cancel()
-        animationStartTime = System.currentTimeMillis()
+        animationStartTime = Clock.System.now()
         isAnimatingIn = false
         isAnimatingOut = true
         animationOutType = type
@@ -176,8 +179,8 @@ object OverlayFeature {
         val baseY = 20 // Top of screen with some margin
 
         // Calculate animation progress (0.0 to 1.0)
-        val elapsedMs = System.currentTimeMillis() - animationStartTime
-        val progress = (elapsedMs.toDouble() / ANIMATION_DURATION.inWholeMilliseconds).coerceIn(0.0, 1.0)
+        val elapsed = Clock.System.now() - animationStartTime
+        val progress = (elapsed / ANIMATION_DURATION).coerceIn(0.0, 1.0)
         val easedProgress = easeInOutCubic(progress)
 
         // Apply animation offset
@@ -231,7 +234,7 @@ object OverlayFeature {
         }
 
         val dismissProgress = if (!isAnimatingOut) {
-            val elapsedDismissMs = System.currentTimeMillis() - autoDismissStartTime
+            val elapsedDismissMs = Clock.System.now() - autoDismissStartTime
             dismissProgress(elapsedDismissMs, overlay)
         } else 1.0
 
@@ -373,8 +376,11 @@ object OverlayFeature {
 
     internal fun autoDismissDelay(overlay: Overlay) = effectiveDisplayDuration(overlay)
 
-    internal fun dismissProgress(elapsedMilliseconds: Long, overlay: Overlay) =
-        (elapsedMilliseconds.toDouble() / effectiveDisplayDuration(overlay).inWholeMilliseconds).coerceIn(0.0, 1.0)
+    internal fun remainingDisplayDuration(entry: PromptEntry, currentTime: Instant = Clock.System.now()) =
+        (autoDismissDelay(entry.overlay) - (currentTime - entry.enqueuedAt)).coerceAtLeast(0.milliseconds)
+
+    internal fun dismissProgress(elapsedTime: Duration, overlay: Overlay) =
+        (elapsedTime / effectiveDisplayDuration(overlay)).coerceIn(0.0, 1.0)
 
     private fun easeInOutCubic(t: Double): Double {
         return if (t < 0.5) {

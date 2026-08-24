@@ -20,6 +20,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
+import kotlin.time.Instant
 
 class OverlayFeatureTest {
     private val minecraftInstanceField: Field = Minecraft::class.java.getDeclaredField("instance").apply {
@@ -211,15 +212,24 @@ class OverlayFeatureTest {
     }
 
     @Test
+    fun `queued time counts toward display duration`() {
+        val overlay = TestOverlay(0, maxDisplayDuration = 5.seconds)
+        val entry = PromptEntry(1, overlay, enqueuedAt = Instant.fromEpochMilliseconds(1000))
+
+        assertEquals(3.seconds, OverlayFeature.remainingDisplayDuration(entry, currentTime = Instant.fromEpochMilliseconds(3_000)))
+        assertEquals(Duration.ZERO, OverlayFeature.remainingDisplayDuration(entry, currentTime = Instant.fromEpochMilliseconds(7_000)))
+    }
+
+    @Test
     fun `progress calculation uses effective display duration`() {
         val overlay = TestOverlay(0, maxDisplayDuration = configuredDuration - 2.seconds)
         val effectiveDuration = OverlayFeature.effectiveDisplayDuration(overlay)
 
         assertEquals(
             0.5,
-            OverlayFeature.dismissProgress(effectiveDuration.inWholeMilliseconds / 2, overlay),
+            OverlayFeature.dismissProgress(effectiveDuration / 2, overlay),
         )
-        assertEquals(1.0, OverlayFeature.dismissProgress(effectiveDuration.inWholeMilliseconds, overlay))
+        assertEquals(1.0, OverlayFeature.dismissProgress(effectiveDuration, overlay))
     }
 
     @Test

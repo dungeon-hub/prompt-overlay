@@ -3,8 +3,14 @@ package net.dungeonhub.promptoverlay.feature
 import java.util.ArrayDeque
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.enums.RemoveType
+import kotlin.time.Clock
+import kotlin.time.Instant
 
-internal data class PromptEntry(val id: Long, val overlay: Overlay)
+internal data class PromptEntry(
+    val id: Long,
+    val overlay: Overlay,
+    val enqueuedAt: Instant,
+)
 
 internal class PromptQueueManager(
     private val onShow: (PromptEntry) -> Unit,
@@ -19,7 +25,7 @@ internal class PromptQueueManager(
         private set
 
     fun enqueue(overlay: Overlay) {
-        val entry = PromptEntry(nextId++, overlay)
+        val entry = PromptEntry(nextId++, overlay, Clock.System.now())
         if (currentPrompt == null && outgoingPrompt == null) setCurrentPrompt(entry) else pendingEntries.addLast(entry)
     }
 
