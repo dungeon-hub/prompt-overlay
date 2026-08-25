@@ -62,7 +62,7 @@ object OverlayCategory : CategoryKt("overlay") {
             0xE03B3213.toInt(), // Golden Yellow
             0xE03A2334.toInt(), // Light Pink
             0xF5101018.toInt(), // Opaque Obsidian: Near-opaque charcoal with a subtle violet cast for maximum readability
-            0x00000000.toInt()  // Transparent
+            0  // Transparent / 0x00000000
         ).toIntArray()
     }
 

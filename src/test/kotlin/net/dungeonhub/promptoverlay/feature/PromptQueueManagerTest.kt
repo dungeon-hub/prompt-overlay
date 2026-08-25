@@ -3,6 +3,8 @@ package net.dungeonhub.promptoverlay.feature
 import java.awt.Color
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -67,6 +69,29 @@ class PromptQueueManagerTest {
     }
 
     @Test
+    fun `queued prompt timeout does not expire the current prompt`() {
+        val fixture = Fixture()
+        val first = TestOverlay("A")
+        val second = TestOverlay("B", maxDisplayDuration = 30.seconds)
+
+        // The global prompt length is 60 seconds. Ten seconds after the first
+        // prompt is shown, a prompt with its own 30-second limit is queued.
+        fixture.manager.enqueue(first)
+        val firstId = fixture.manager.currentPrompt()!!.id
+        fixture.manager.enqueue(second)
+        val secondId = firstId + 1
+
+        // At t=40s the queued prompt's timeout must not dismiss the first prompt.
+        assertFalse(fixture.manager.removePrompt(secondId, RemoveType.Dismiss))
+        assertSame(first, fixture.manager.currentPrompt()?.overlay)
+
+        // At t=60s the first prompt's global timeout expires it normally.
+        assertTrue(fixture.manager.removePrompt(firstId, RemoveType.Dismiss))
+        assertNull(fixture.manager.currentPrompt())
+        assertSame(first, fixture.manager.outgoingPrompt()?.overlay)
+    }
+
+    @Test
     fun `action claim prevents recursive resolution while callback enqueues`() {
         val fixture = Fixture()
         fixture.manager.enqueue(TestOverlay("A"))
@@ -119,7 +144,10 @@ class PromptQueueManagerTest {
         val manager = PromptQueueManager(shown::add, { entry, _ -> exits.add(entry) })
     }
 
-    private class TestOverlay(name: String) : Overlay {
+    private class TestOverlay(
+        name: String,
+        override val maxDisplayDuration: Duration? = null,
+    ) : Overlay {
         override val borderColor: Color = Color.WHITE
         override val message: Component = Component.literal(name)
         override fun getActionsHeight(width: Int) = 0
