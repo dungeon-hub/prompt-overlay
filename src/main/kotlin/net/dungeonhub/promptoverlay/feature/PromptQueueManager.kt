@@ -18,11 +18,9 @@ internal class PromptQueueManager(
     private val onExitComplete: (PromptEntry) -> Unit = {},
 ) {
     private var nextId = 1L
-    var currentPrompt: PromptEntry? = null
-        private set
+    private var currentPrompt: PromptEntry? = null
     private val pendingEntries = ArrayDeque<PromptEntry>()
-    var outgoingPrompt: PromptEntry? = null
-        private set
+    private var outgoingPrompt: PromptEntry? = null
 
     @Synchronized
     fun enqueue(overlay: Overlay) {
@@ -42,12 +40,17 @@ internal class PromptQueueManager(
 
     @Synchronized
     fun completeExit(id: Long) {
-        if (outgoingPrompt?.id != id) return
-        val completed = outgoingPrompt ?: return
+        val completed = outgoingPrompt?.takeIf { it.id == id } ?: return
         outgoingPrompt = null
         onExitComplete(completed)
         if (pendingEntries.isNotEmpty()) setCurrentPrompt(pendingEntries.removeFirst())
     }
+
+    @Synchronized
+    fun currentPrompt(): PromptEntry? = currentPrompt
+
+    @Synchronized
+    fun outgoingPrompt(): PromptEntry? = outgoingPrompt
 
     @Synchronized
     fun waitingCount(): Int = pendingEntries.size

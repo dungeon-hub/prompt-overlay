@@ -93,17 +93,14 @@ object OverlayRenderer {
         } ?: emptyList()
     }
 
-    fun calculateTitleHeight(overlay: Overlay, boxWidth: Int): Int {
+    fun calculateTitleHeight(overlay: Overlay, boxWidth: Int, descriptionLines: List<FormattedCharSequence> = getDescriptionLines(overlay, boxWidth)): Int {
         val font = Minecraft.getInstance().font
 
-        val descriptionLines = getDescriptionLines(overlay, boxWidth)
         val descriptionHeight = if (descriptionLines.isEmpty()) 0 else PADDING / 2 + descriptionLines.size * font.lineHeight
         return font.lineHeight + descriptionHeight + PADDING * 2
     }
 
-    fun calculateTotalHeight(overlay: Overlay): Int {
-        val boxWidth = calculateBoxWidth(overlay)
-
+    fun calculateTotalHeight(overlay: Overlay, boxWidth: Int = calculateBoxWidth(overlay)): Int {
         val messageHeight = calculateTitleHeight(overlay, boxWidth)
         val actionsHeight = overlay.getActionsHeight(boxWidth) // Get height without rendering
         return messageHeight + actionsHeight + PADDING
@@ -132,7 +129,7 @@ object OverlayRenderer {
         val font = Minecraft.getInstance().font
         val boxWidth = calculateBoxWidth(overlay)
         val messageHeight = calculateTitleHeight(overlay, boxWidth)
-        val totalHeight = calculateTotalHeight(overlay)
+        val totalHeight = calculateTotalHeight(overlay, boxWidth)
 
         // Convert AWT Color to RGB int
         val borderColorRGB = overlay.borderColor.rgb and 0x00FFFFFF

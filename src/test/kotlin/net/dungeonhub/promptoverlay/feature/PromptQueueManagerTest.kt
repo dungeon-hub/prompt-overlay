@@ -24,16 +24,16 @@ class PromptQueueManagerTest {
         val c = TestOverlay("C")
 
         fixture.manager.enqueue(a); fixture.manager.enqueue(b); fixture.manager.enqueue(c)
-        assertSame(a, fixture.manager.currentPrompt?.overlay)
+        assertSame(a, fixture.manager.currentPrompt()?.overlay)
         assertEquals(2, fixture.manager.waitingCount())
 
-        val aId = fixture.manager.currentPrompt!!.id
+        val aId = fixture.manager.currentPrompt()!!.id
         fixture.manager.removePrompt(aId, RemoveType.Accept)
-        assertNull(fixture.manager.currentPrompt)
-        assertSame(a, fixture.manager.outgoingPrompt?.overlay)
+        assertNull(fixture.manager.currentPrompt())
+        assertSame(a, fixture.manager.outgoingPrompt()?.overlay)
 
         fixture.manager.completeExit(aId)
-        assertSame(b, fixture.manager.currentPrompt?.overlay)
+        assertSame(b, fixture.manager.currentPrompt()?.overlay)
         assertEquals(1, fixture.manager.waitingCount())
     }
 
@@ -41,36 +41,36 @@ class PromptQueueManagerTest {
     fun `enqueue during exit waits behind the outgoing entry`() {
         val fixture = Fixture()
         fixture.manager.enqueue(TestOverlay("A"))
-        val id = fixture.manager.currentPrompt!!.id
+        val id = fixture.manager.currentPrompt()!!.id
         fixture.manager.removePrompt(id, RemoveType.Dismiss)
         val b = TestOverlay("B")
         fixture.manager.enqueue(b)
 
-        assertNull(fixture.manager.currentPrompt)
+        assertNull(fixture.manager.currentPrompt())
         fixture.manager.completeExit(id)
-        assertSame(b, fixture.manager.currentPrompt?.overlay)
+        assertSame(b, fixture.manager.currentPrompt()?.overlay)
     }
 
     @Test
     fun `stale and duplicate callbacks cannot resolve the promoted entry`() {
         val fixture = Fixture()
         fixture.manager.enqueue(TestOverlay("A")); fixture.manager.enqueue(TestOverlay("B"))
-        val aId = fixture.manager.currentPrompt!!.id
+        val aId = fixture.manager.currentPrompt()!!.id
         fixture.manager.removePrompt(aId, RemoveType.Dismiss)
         fixture.manager.removePrompt(aId, RemoveType.Dismiss)
         assertEquals(1, fixture.exits.size)
         fixture.manager.completeExit(aId)
-        val b = fixture.manager.currentPrompt!!
+        val b = fixture.manager.currentPrompt()!!
 
         fixture.manager.removePrompt(aId, RemoveType.Dismiss)
-        assertEquals(b, fixture.manager.currentPrompt)
+        assertEquals(b, fixture.manager.currentPrompt())
     }
 
     @Test
     fun `action claim prevents recursive resolution while callback enqueues`() {
         val fixture = Fixture()
         fixture.manager.enqueue(TestOverlay("A"))
-        val a = fixture.manager.currentPrompt!!
+        val a = fixture.manager.currentPrompt()!!
         assertTrue(fixture.manager.removePrompt(a.id, RemoveType.Accept))
         fixture.manager.enqueue(TestOverlay("C"))
         assertFalse(fixture.manager.removePrompt(a.id, RemoveType.Accept))
@@ -96,8 +96,9 @@ class PromptQueueManagerTest {
             enqueueStarted.await()
         }
         manager.enqueue(TestOverlay("A"))
-        manager.enqueue(TestOverlay("B"))
-        val aId = manager.currentPrompt!!.id
+        val b = TestOverlay("B")
+        manager.enqueue(b)
+        val aId = manager.currentPrompt()!!.id
         manager.removePrompt(aId, RemoveType.Dismiss)
 
         try {
@@ -107,6 +108,8 @@ class PromptQueueManagerTest {
         }
         enqueueThread.join()
 
+        assertSame(b, manager.currentPrompt()?.overlay)
+        assertEquals(1, manager.waitingCount())
         assertNull(failure.get())
     }
 

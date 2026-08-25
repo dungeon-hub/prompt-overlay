@@ -26,7 +26,7 @@ import kotlin.time.Instant
 
 object OverlayFeature {
     val currentOverlay: Overlay?
-        get() = queue.currentPrompt?.overlay
+        get() = queue.currentPrompt()?.overlay
     private var hideMessageJob: Job? = null
     private var transitionJob: Job? = null
 
@@ -62,7 +62,7 @@ object OverlayFeature {
     }
 
     fun removeOverlay(type: RemoveType) {
-        val entry = queue.currentPrompt ?: return
+        val entry = queue.currentPrompt() ?: return
         removeOverlay(entry.id, type)
     }
 
@@ -79,10 +79,12 @@ object OverlayFeature {
     }
 
     internal fun removeOverlay(entry: PromptEntry, type: RemoveType) = removeOverlay(entry.id, type)
-    internal fun currentPrompt() = queue.currentPrompt
+    internal fun currentPrompt() = queue.currentPrompt()
 
     fun render(graphics: GuiGraphicsExtractor) {
-        val overlay = ((if (OverlayRenderer.isAnimatingOut) queue.outgoingPrompt else queue.currentPrompt)?.overlay) ?: return
+        val overlay = (
+            (if (OverlayRenderer.isAnimatingOut) queue.outgoingPrompt() else queue.currentPrompt())?.overlay
+        ) ?: return
 
         val minecraft = Minecraft.getInstance()
 
@@ -94,7 +96,7 @@ object OverlayFeature {
 
         val boxWidth = OverlayRenderer.calculateBoxWidth(overlay)
 
-        val totalHeight = OverlayRenderer.calculateTotalHeight(overlay)
+        val totalHeight = OverlayRenderer.calculateTotalHeight(overlay, boxWidth)
 
         // Base position (center)
         val baseX = (screenWidth - boxWidth) / 2
@@ -160,7 +162,15 @@ object OverlayFeature {
             dismissProgress(elapsedDismissMs, overlay)
         } else 1.0
 
-        OverlayRenderer.render(graphics, overlay, x, y, dismissProgress, OverlayRenderer.isAnimatingOut, queue.waitingCount())
+        OverlayRenderer.render(
+            graphics,
+            overlay,
+            x,
+            y,
+            dismissProgress,
+            OverlayRenderer.isAnimatingOut,
+            queue.waitingCount()
+        )
     }
 
     internal fun effectiveDisplayDuration(overlay: Overlay) =
