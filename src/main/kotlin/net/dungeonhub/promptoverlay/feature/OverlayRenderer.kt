@@ -128,7 +128,8 @@ object OverlayRenderer {
     ) {
         val font = Minecraft.getInstance().font
         val boxWidth = calculateBoxWidth(overlay)
-        val messageHeight = calculateTitleHeight(overlay, boxWidth)
+        val descriptionLines = getDescriptionLines(overlay, boxWidth)
+        val messageHeight = calculateTitleHeight(overlay, boxWidth, descriptionLines)
         val totalHeight = calculateTotalHeight(overlay, boxWidth)
 
         // Convert AWT Color to RGB int
@@ -202,7 +203,7 @@ object OverlayRenderer {
         graphics.text(font, messageText, messageX, messageY, 0xFFFFFFFF.toInt())
 
         // Render the optional description below the message, wrapping it to the overlay width.
-        getDescriptionLines(overlay, boxWidth).forEachIndexed { index, line ->
+        descriptionLines.forEachIndexed { index, line ->
             val lineWidth = font.width(line)
             val lineX = x + (boxWidth - lineWidth) / 2
             val lineY = messageY + font.lineHeight + PADDING / 2 + index * font.lineHeight
