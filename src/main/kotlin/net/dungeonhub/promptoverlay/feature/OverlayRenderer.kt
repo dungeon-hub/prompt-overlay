@@ -100,8 +100,8 @@ object OverlayRenderer {
         return font.lineHeight + descriptionHeight + PADDING * 2
     }
 
-    fun calculateTotalHeight(overlay: Overlay, boxWidth: Int = calculateBoxWidth(overlay)): Int {
-        val messageHeight = calculateTitleHeight(overlay, boxWidth)
+    fun calculateTotalHeight(overlay: Overlay, boxWidth: Int = calculateBoxWidth(overlay), descriptionLines: List<FormattedCharSequence> = getDescriptionLines(overlay, boxWidth)): Int {
+        val messageHeight = calculateTitleHeight(overlay, boxWidth, descriptionLines)
         val actionsHeight = overlay.getActionsHeight(boxWidth) // Get height without rendering
         return messageHeight + actionsHeight + PADDING
     }
@@ -130,7 +130,7 @@ object OverlayRenderer {
         val boxWidth = calculateBoxWidth(overlay)
         val descriptionLines = getDescriptionLines(overlay, boxWidth)
         val messageHeight = calculateTitleHeight(overlay, boxWidth, descriptionLines)
-        val totalHeight = calculateTotalHeight(overlay, boxWidth)
+        val totalHeight = calculateTotalHeight(overlay, boxWidth, descriptionLines)
 
         // Convert AWT Color to RGB int
         val borderColorRGB = overlay.borderColor.rgb and 0x00FFFFFF
