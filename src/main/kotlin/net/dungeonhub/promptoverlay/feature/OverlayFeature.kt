@@ -48,6 +48,7 @@ object OverlayFeature {
         onShow = ::setCurrentOverlay,
         onExit = ::removeCurrentOverlay,
         onExitComplete = { OverlayRenderer.completeAnimatingOut() },
+        isExpired = { remainingDisplayDuration(it) == Duration.ZERO },
     )
 
     fun init() {

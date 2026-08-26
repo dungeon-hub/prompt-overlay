@@ -84,6 +84,29 @@ class PromptQueueManagerTest {
     }
 
     @Test
+    fun `expired queued entries are skipped without being shown`() {
+        val shown = mutableListOf<PromptEntry>()
+        val expired = TestOverlay("expired")
+        val valid = TestOverlay("valid")
+        val manager = PromptQueueManager(
+            onShow = shown::add,
+            onExit = { _, _ -> },
+            isExpired = { it.overlay === expired },
+        )
+        manager.enqueue(TestOverlay("current"))
+        manager.enqueue(expired)
+        manager.enqueue(valid)
+        val currentId = manager.currentPrompt()!!.id
+
+        manager.removePrompt(currentId, RemoveType.Dismiss)
+        manager.completeExit(currentId)
+
+        assertSame(valid, manager.currentPrompt()?.overlay)
+        assertEquals(listOf("current", "valid"), shown.map { it.overlay.message.string })
+        assertEquals(0, manager.waitingCount())
+    }
+
+    @Test
     fun `action claim prevents recursive resolution while callback enqueues`() {
         val fixture = Fixture()
         fixture.manager.enqueue(TestOverlay("A"))
@@ -100,7 +123,7 @@ class PromptQueueManagerTest {
         val failure = AtomicReference<Throwable?>()
         lateinit var enqueueThread: Thread
         lateinit var manager: PromptQueueManager
-        manager = PromptQueueManager({}, { _, _ -> }) {
+        manager = PromptQueueManager({}, { _, _ -> }, onExitComplete = {
             enqueueThread = Thread {
                 enqueueStarted.countDown()
                 try {
@@ -111,7 +134,7 @@ class PromptQueueManagerTest {
             }
             enqueueThread.start()
             enqueueStarted.await()
-        }
+        })
         manager.enqueue(TestOverlay("A"))
         val b = TestOverlay("B")
         manager.enqueue(b)
