@@ -4,6 +4,7 @@ import java.awt.Color
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -107,7 +108,7 @@ class PromptQueueManagerTest {
     }
 
     @Test
-    fun `action claim prevents recursive resolution while callback enqueues`() {
+    fun `repeated removal of an already-resolved prompt is rejected`() {
         val fixture = Fixture()
         fixture.manager.enqueue(TestOverlay("A"))
         val a = fixture.manager.currentPrompt()!!
@@ -134,6 +135,11 @@ class PromptQueueManagerTest {
             }
             enqueueThread.start()
             enqueueStarted.await()
+            val deadline = System.nanoTime() + 5.seconds.inWholeNanoseconds
+            while (enqueueThread.state != Thread.State.BLOCKED && System.nanoTime() < deadline) {
+                Thread.yield()
+            }
+            assertEquals(Thread.State.BLOCKED, enqueueThread.state)
         })
         manager.enqueue(TestOverlay("A"))
         val b = TestOverlay("B")

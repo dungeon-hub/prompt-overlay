@@ -224,11 +224,19 @@ class OverlayFeatureTest {
 
     @Test
     fun `queued time counts toward display duration`() {
-        val overlay = TestOverlay(0, maxDisplayDuration = 5.seconds)
-        val entry = PromptEntry(1, overlay, enqueuedAt = Instant.fromEpochMilliseconds(1000))
+        val overlay = TestOverlay(0, maxDisplayDuration = configuredDuration)
+        val enqueuedAt = Instant.fromEpochMilliseconds(1_000)
+        val entry = PromptEntry(1, overlay, enqueuedAt)
+        val queuedTime = 2.seconds
 
-        assertEquals(3.seconds, OverlayFeature.remainingDisplayDuration(entry, currentTime = Instant.fromEpochMilliseconds(3_000)))
-        assertEquals(Duration.ZERO, OverlayFeature.remainingDisplayDuration(entry, currentTime = Instant.fromEpochMilliseconds(7_000)))
+        assertEquals(
+            configuredDuration - queuedTime,
+            OverlayFeature.remainingDisplayDuration(entry, currentTime = enqueuedAt + queuedTime),
+        )
+        assertEquals(
+            configuredDuration - configuredDuration,
+            OverlayFeature.remainingDisplayDuration(entry, currentTime = enqueuedAt + configuredDuration + 1.seconds),
+        )
     }
 
     @Test

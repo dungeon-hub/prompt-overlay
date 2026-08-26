@@ -42,9 +42,7 @@ object PromptOverlay : ClientModInitializer, OverlayHandler {
                                     OverlayFeature.setOverlay(FriendRequestOverlay("Taubsie"))
                                     return@executes 1
                                 }
-                            ).executes {
-                                return@executes 0
-                            }
+                            )
                     )
                     .executes {
                         Minecraft.getInstance().schedule {

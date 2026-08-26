@@ -12,6 +12,11 @@ internal data class PromptEntry(
     val enqueuedAt: Instant,
 )
 
+/**
+ * Manages prompt transitions and invokes lifecycle callbacks synchronously while holding its instance lock.
+ * Callbacks invoked by [setCurrentPrompt], [removePrompt], or [completeExit] must not call back into this
+ * manager on the calling thread.
+ */
 internal class PromptQueueManager(
     private val onShow: (PromptEntry) -> Unit,
     private val onExit: (PromptEntry, RemoveType) -> Unit,
