@@ -37,6 +37,8 @@ object KeyPressHandler {
         val entry = OverlayFeature.currentPrompt() ?: return false
         val overlay = entry.overlay as? T ?: return false
         if (!OverlayFeature.removeOverlay(entry, type)) return false
+        // Overlay actions come from third-party implementations. Any failure must not break key handling and possibly crash the game in that action, so catch broadly and log.
+        @Suppress("TooGenericExceptionCaught")
         try {
             overlay.action()
         } catch (exception: Exception) {

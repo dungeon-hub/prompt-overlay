@@ -1,30 +1,39 @@
 package net.dungeonhub.promptoverlay.feature
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.*
 import net.dungeonhub.promptoverlay.PromptOverlay.MOD_ID
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
-import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.dungeonhub.promptoverlay.enums.PromptAnimation
+import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
+import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.resources.Identifier
+import net.minecraft.sounds.SoundEvent
+import net.minecraft.sounds.SoundEvents
 import java.util.concurrent.Executors
 import kotlin.math.pow
 import kotlin.time.Clock
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 object OverlayFeature {
+    internal class SoundSettings(
+        val event: SoundEvent,
+        val pitch: Float = 1.0f,
+        val volume: Float = 0.25f,
+    )
+
+    private val defaultSounds = listOf(
+        SoundSettings(SoundEvents.AMETHYST_BLOCK_BREAK, pitch = 0.5f),
+        SoundSettings(SoundEvents.EXPERIENCE_ORB_PICKUP)
+    )
+
     val currentOverlay: Overlay?
         get() = queue.currentPrompt()?.overlay
     private var hideMessageJob: Job? = null
@@ -39,6 +48,7 @@ object OverlayFeature {
         onShow = ::setCurrentOverlay,
         onExit = ::removeCurrentOverlay,
         onExitComplete = { OverlayRenderer.completeAnimatingOut() },
+        isExpired = { remainingDisplayDuration(it) == Duration.ZERO },
     )
 
     fun init() {
@@ -53,6 +63,8 @@ object OverlayFeature {
     }
 
     private fun setCurrentOverlay(entry: PromptEntry) {
+        playNotificationSound()
+
         OverlayRenderer.startAnimatingIn(entry.enqueuedAt)
         hideMessageJob?.cancel()
         hideMessageJob = scheduler.launch {
@@ -158,8 +170,8 @@ object OverlayFeature {
         }
 
         val dismissProgress = if (!OverlayRenderer.isAnimatingOut) {
-            val elapsedDismissMs = Clock.System.now() - OverlayRenderer.autoDismissStartTime
-            dismissProgress(elapsedDismissMs, overlay)
+            val elapsedDismissTime = Clock.System.now() - OverlayRenderer.autoDismissStartTime
+            dismissProgress(elapsedDismissTime, overlay)
         } else 1.0
 
         OverlayRenderer.render(
@@ -171,6 +183,15 @@ object OverlayFeature {
             OverlayRenderer.isAnimatingOut,
             queue.waitingCount()
         )
+    }
+
+    private fun playNotificationSound() {
+        if (!OverlayCategory.soundsEnabled) return
+
+        val sound = defaultSounds.random()
+        Minecraft.getInstance().execute {
+            Minecraft.getInstance().soundManager.play(SimpleSoundInstance.forUI(sound.event, sound.pitch, sound.volume))
+        }
     }
 
     internal fun effectiveDisplayDuration(overlay: Overlay) =
@@ -200,5 +221,4 @@ object OverlayFeature {
         val shifted = t - 1.0
         return 1.0 + (overshoot + 1.0) * shifted.pow(3.0) + overshoot * shifted.pow(2.0)
     }
-
 }

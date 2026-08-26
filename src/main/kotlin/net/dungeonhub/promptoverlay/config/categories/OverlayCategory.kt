@@ -50,6 +50,11 @@ object OverlayCategory : CategoryKt("overlay") {
         slider = true
     }
 
+    val soundsEnabled by boolean("sounds_enabled", true) {
+        name = Literal("Enable Sounds")
+        description = Literal("Play sounds when prompt overlays appear.")
+    }
+
     val backgroundColor by color("background_color", 0xA0000000.toInt()) {
         name = Literal("Background Color")
         allowAlpha = true

@@ -18,16 +18,22 @@ import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.renderer.RenderPipelines
 import net.minecraft.resources.Identifier
 import net.minecraft.util.FormattedCharSequence
+import kotlin.concurrent.Volatile
 
 object OverlayRenderer {
+    @Volatile
     internal var animationStartTime: Instant = Instant.DISTANT_PAST
         private set
+    @Volatile
     internal var autoDismissStartTime: Instant = Instant.DISTANT_PAST
         private set
+    @Volatile
     internal var isAnimatingIn: Boolean = false
         private set
+    @Volatile
     internal var isAnimatingOut: Boolean = false
         private set
+    @Volatile
     internal var animationOutType: RemoveType? = null
         private set
 
@@ -41,6 +47,8 @@ object OverlayRenderer {
     private const val BADGE_BACKGROUND_COLOR = 0xFFE53935.toInt()
     private const val BADGE_TEXT_SHADOW_COLOR = 0xC0000000.toInt()
     private const val BADGE_TEXT_COLOR = 0xFFFFFFFF.toInt()
+
+    private val isJune by lazy { LocalDate.now().month == Month.JUNE }
 
     private val customBackground =
         Identifier.fromNamespaceAndPath(MOD_ID, "textures/gui/prompt-background.png")
@@ -161,7 +169,7 @@ object OverlayRenderer {
         val separatorWidth = boxWidth - PADDING * 2
 
         val clampedDismissProgress = dismissProgress.coerceIn(0.0, 1.0)
-        val pride = LocalDate.now().month == Month.JUNE || OverlayCategory.alwaysPrideMonth
+        val pride = OverlayCategory.alwaysPrideMonth || isJune
 
         if (wrapProgress) {
             drawWrappedProgress(graphics, style, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, clampedDismissProgress, borderColor, pride)

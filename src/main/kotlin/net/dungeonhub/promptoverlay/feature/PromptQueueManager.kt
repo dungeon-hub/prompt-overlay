@@ -12,10 +12,16 @@ internal data class PromptEntry(
     val enqueuedAt: Instant,
 )
 
+/**
+ * Manages prompt transitions and invokes lifecycle callbacks synchronously while holding its instance lock.
+ * Callbacks invoked by [setCurrentPrompt], [removePrompt], or [completeExit] must not call back into this
+ * manager on the calling thread.
+ */
 internal class PromptQueueManager(
     private val onShow: (PromptEntry) -> Unit,
     private val onExit: (PromptEntry, RemoveType) -> Unit,
     private val onExitComplete: (PromptEntry) -> Unit = {},
+    private val isExpired: (PromptEntry) -> Boolean = { false },
 ) {
     private var nextId = 1L
     private var currentPrompt: PromptEntry? = null
@@ -43,7 +49,13 @@ internal class PromptQueueManager(
         val completed = outgoingPrompt?.takeIf { it.id == id } ?: return
         outgoingPrompt = null
         onExitComplete(completed)
-        if (pendingEntries.isNotEmpty()) setCurrentPrompt(pendingEntries.removeFirst())
+        while (pendingEntries.isNotEmpty()) {
+            val next = pendingEntries.removeFirst()
+            if (!isExpired(next)) {
+                setCurrentPrompt(next)
+                break
+            }
+        }
     }
 
     @Synchronized
