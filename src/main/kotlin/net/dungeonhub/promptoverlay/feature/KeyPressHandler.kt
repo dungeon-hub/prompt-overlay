@@ -5,88 +5,43 @@ import net.dungeonhub.promptoverlay.api.render.DeniableOverlay
 import net.dungeonhub.promptoverlay.api.render.FiveActionsOverlay
 import net.dungeonhub.promptoverlay.api.render.FourActionsOverlay
 import net.dungeonhub.promptoverlay.api.render.OneOptionOverlay
+import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.api.render.ThreeActionsOverlay
 import net.dungeonhub.promptoverlay.api.render.TwoOptionsOverlay
 import net.dungeonhub.promptoverlay.enums.RemoveType
+import org.slf4j.LoggerFactory
 
 object KeyPressHandler {
-    fun handleAccept(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay as? AcceptableOverlay ?: return false
+    private val logger = LoggerFactory.getLogger(KeyPressHandler::class.java)
 
-        currentOverlay.accept()
+    fun handleAccept() = act<AcceptableOverlay>(RemoveType.Accept) { accept() }
 
-        OverlayFeature.removeOverlay(RemoveType.Accept)
+    fun handleDeny() = act<DeniableOverlay>(RemoveType.Deny) { deny() }
 
-        return true
-    }
+    fun handleDismiss() = act<Overlay>(RemoveType.Dismiss) { dismiss() }
 
-    fun handleDeny(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay as? DeniableOverlay ?: return false
+    fun handleFirstOption() = act<OneOptionOverlay>(RemoveType.Accept) { firstOption() }
 
-        currentOverlay.deny()
+    fun handleSecondOption() = act<TwoOptionsOverlay>(RemoveType.Accept) { secondOption() }
 
-        OverlayFeature.removeOverlay(RemoveType.Deny)
+    fun handleThirdOption() = act<ThreeActionsOverlay>(RemoveType.Accept) { thirdOption() }
 
-        return true
-    }
+    fun handleFourthOption() = act<FourActionsOverlay>(RemoveType.Accept) { fourthOption() }
 
-    fun handleDismiss(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay ?: return false
+    fun handleFifthOption() = act<FiveActionsOverlay>(RemoveType.Accept) { fifthOption() }
 
-        currentOverlay.dismiss()
-
-        OverlayFeature.removeOverlay(RemoveType.Dismiss)
-
-        return true
-    }
-
-    fun handleFirstOption(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay as? OneOptionOverlay ?: return false
-
-        currentOverlay.firstOption()
-
-        OverlayFeature.removeOverlay(RemoveType.Accept)
-
-        return true
-    }
-
-    fun handleSecondOption(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay as? TwoOptionsOverlay ?: return false
-
-        currentOverlay.secondOption()
-
-        OverlayFeature.removeOverlay(RemoveType.Accept)
-
-        return true
-    }
-
-    fun handleThirdOption(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay as? ThreeActionsOverlay ?: return false
-
-        currentOverlay.thirdOption()
-
-        OverlayFeature.removeOverlay(RemoveType.Accept)
-
-        return true
-    }
-
-    fun handleFourthOption(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay as? FourActionsOverlay ?: return false
-
-        currentOverlay.fourthOption()
-
-        OverlayFeature.removeOverlay(RemoveType.Accept)
-
-        return true
-    }
-
-    fun handleFifthOption(): Boolean {
-        val currentOverlay = OverlayFeature.currentOverlay as? FiveActionsOverlay ?: return false
-
-        currentOverlay.fifthOption()
-
-        OverlayFeature.removeOverlay(RemoveType.Accept)
-
+    private inline fun <reified T> act(
+        type: RemoveType,
+        action: T.() -> Unit,
+    ): Boolean {
+        val entry = OverlayFeature.currentPrompt() ?: return false
+        val overlay = entry.overlay as? T ?: return false
+        if (!OverlayFeature.removeOverlay(entry, type)) return false
+        try {
+            overlay.action()
+        } catch (exception: Exception) {
+            logger.error("Prompt action failed for prompt {}", entry.id, exception)
+        }
         return true
     }
 }
