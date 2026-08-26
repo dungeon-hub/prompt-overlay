@@ -39,7 +39,15 @@ object PromptOverlay : ClientModInitializer, OverlayHandler {
                         ClientCommands.literal("debug")
                             .then(
                                 ClientCommands.literal("test-prompt").executes {
-                                    OverlayFeature.setOverlay(FriendRequestOverlay("Taubsie"))
+                                    OverlayFeature.setOverlay(object : FriendRequestOverlay("Taubsie") {
+                                        override fun accept() {
+                                            Minecraft.getInstance().execute {
+                                                // We're sending a friend request to me explicitly here - let's call this an easter egg
+                                                Minecraft.getInstance().player?.connection?.sendCommand("friend $from")
+                                            }
+                                        }
+                                        override fun deny() {}
+                                    })
                                     return@executes 1
                                 }
                             )
