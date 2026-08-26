@@ -50,9 +50,11 @@ object PromptOverlayApi {
         return try {
             overlayHandler.setOverlay(overlay)
             SetOverlayResult.Queued
-        } catch (throwable: Throwable) {
+        } catch (exception: Exception) {
+            overlayError(exception)
+        } catch (linkageError: LinkageError) {
             // Linkage errors (for example NoSuchFieldError) are particularly important here: they can occur when a mod bundles an older API whose Overlay implementation lacks newer members.
-            overlayError(throwable)
+            overlayError(linkageError)
         }
     }
 
