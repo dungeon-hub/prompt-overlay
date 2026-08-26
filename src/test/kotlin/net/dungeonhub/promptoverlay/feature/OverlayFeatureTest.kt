@@ -16,10 +16,12 @@ import kotlin.test.assertTrue
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.enums.RemoveType
+import net.minecraft.SharedConstants
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
+import net.minecraft.server.Bootstrap
 import net.minecraft.util.FormattedCharSequence
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
@@ -36,6 +38,8 @@ class OverlayFeatureTest {
 
     @BeforeTest
     fun installMinecraftWithMockFont() {
+        SharedConstants.tryDetectVersion()
+        Bootstrap.bootStrap()
         previousMinecraft = minecraftInstanceField.get(null) as Minecraft?
         font = mock(Font::class.java)
         setInstanceField(font, "lineHeight", 9)
