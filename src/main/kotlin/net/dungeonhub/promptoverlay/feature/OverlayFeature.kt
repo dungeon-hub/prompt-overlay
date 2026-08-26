@@ -169,8 +169,8 @@ object OverlayFeature {
         }
 
         val dismissProgress = if (!OverlayRenderer.isAnimatingOut) {
-            val elapsedDismissMs = Clock.System.now() - OverlayRenderer.autoDismissStartTime
-            dismissProgress(elapsedDismissMs, overlay)
+            val elapsedDismissTime = Clock.System.now() - OverlayRenderer.autoDismissStartTime
+            dismissProgress(elapsedDismissTime, overlay)
         } else 1.0
 
         OverlayRenderer.render(

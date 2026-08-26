@@ -52,7 +52,7 @@ object OverlayCategory : CategoryKt("overlay") {
 
     val soundsEnabled by boolean("sounds_enabled", true) {
         name = Literal("Enable Sounds")
-        description = Literal("Play sounds when prompt overlays appear or an option is selected.")
+        description = Literal("Play sounds when prompt overlays appear.")
     }
 
     val backgroundColor by color("background_color", 0xA0000000.toInt()) {
