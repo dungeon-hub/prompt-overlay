@@ -165,6 +165,11 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         OverlayFeature.setOverlay(SkyblockTradeOverlay(player, acceptCommand))
     }),
+    StarlynSisterRewards(Regex("Come see me at §6Torrhus Canyon §for §e§lCLICK HERE§f to claim your rewards!"), FeaturesToggle::starlynSisterRewards, action=action@{ message, _ ->
+        findClickCommand(message) { it == "/starlynsisterrewards" } ?: return@action
+
+        OverlayFeature.setOverlay(StarlynSisterRewardsOverlay())
+    }),
     TrapperHunt(Regex("Accept the trapper's task to hunt the animal?"), FeaturesToggle::trapperHunt, action=action@{ message, _ ->
         lastTrapperQuest = Clock.System.now()
 
@@ -176,7 +181,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
     TrapperRestart(Regex("^Killing the animal rewarded you \\d+ pelts"), FeaturesToggle::trapperHunt, action=action@{ _, _ ->
         val cooldown = 20.seconds - (Clock.System.now() - (lastTrapperQuest ?: Clock.System.now()))
 
-        ScheduleHandler.scheduler.launch {
+        ScheduleHandler.scheduler.launch { // TODO only works when having a cookie buff
             delay(cooldown)
 
             OverlayFeature.setOverlay(TrapperRestartOverlay())

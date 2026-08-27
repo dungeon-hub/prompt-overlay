@@ -1,67 +1,43 @@
 # Prompt Overlay
 
-Prompt Overlay is a modern Minecraft client-side mod that replaces supported chat prompts on Hypixel with a clean, interactive overlay. Instead of opening chat and clicking messages, you can quickly respond using configurable keybinds.
+Prompt Overlay is a client-side Fabric mod that turns supported Hypixel chat prompts into compact, keyboard-driven overlays. It avoids opening chat to click a response while retaining the commands and choices supplied by the server.
 
-The project aims to provide a lightweight, intuitive way to interact with common prompts while remaining highly configurable and extensible.
+> [!WARNING]
+> Prompt Overlay is under active development. Supported prompts and the public API may change before the first stable release.
 
 ## Features
 
-### Interactions
+- Keyboard controls with configurable bindings for accepting, denying, dismissing, and selecting up to five options.
+- Individual feature toggles and configurable display duration, background, and prompt colors.
+- Support for friend, party, guild, duel, and SkyBlock trade requests.
+- Support for Trophy Fish GG, Catacombs requeue, Abiphone, Trapper, and Dark Auction prompts.
+- Support for confirmation prompts and NPC dialogs with up to five choices.
+- A public API through which other Fabric mods can display their own prompts.
 
-* [x] Friend requests
-* [x] Party invites
-* [x] Guild invites
-* [x] SkyBlock trade requests
-* [x] Duel requests
-* [x] Trophy Fish GG prompt
-* [x] Auto requeue into a dungeon
-* [x] Abiphone calls
-* [ ] Announce rare drops in guild/party/public chat
+The project aims to provide a lightweight, intuitive way to interact with common prompts while remaining highly configurable and extensible.
 
-### Dialogs
+## Configuration
 
-* [x] SkyBlock NPC dialogs
-* [x] Confirmation dialogs
-* [x] Multi-choice dialogs
+Run `/prompt-overlay` in game to open the configuration screen. Controls can also be changed in Minecraft's keybind settings.
 
-### Customization
+Configuration includes per-feature toggles, overlay duration and colors, ignored Abiphone contacts, and feature-specific timing options.
 
-* [x] Configurable keybinds
-* [x] Configurable colors
-* [x] Per-feature enable/disable
-* [ ] Configurable appearance
+## Developer API
 
-### Visual & Audio
+Other mods can submit custom overlays without requiring Prompt Overlay to be installed. The API supports action and option templates, prompt-specific lifetime limits, and a failure result so integrations can fall back to their original interaction.
 
-* [ ] Animations
-* [ ] Sound effects
-* [ ] Special effects for contributors
+See the [API integration guide](api/README.md) for dependency setup, a complete example, and further information.
 
-### Developer
+## Building from source
 
-* [x] API for other mods to integrate their own events
+The Gradle wrapper downloads the required build tooling. A Java 25 JDK is required.
 
-## API for developers
+```shell
+./gradlew build
+```
 
-The mod offers an API for you to include your own overlays. For more information about using it, see the `README.md` of the `api` directory on GitHub: [](api/README.md)
-https://github.com/dungeon-hub/prompt-overlay/blob/main/api/README.md
-
-## Roadmap
-
-The long-term goal is to support as many interactive chat prompts and dialogs as possible while keeping the interface clean, responsive, and easy to use.
+Build artifacts are written below `build/libs/`; API artifacts are written below `api/build/libs/`.
 
 ## Credits
 
-Prompt Overlay is inspired by **Popup Events** by Sk1er LLC.
-
-This project is an independent reimplementation built for modern Minecraft versions with a new codebase and an expanded scope.
-
-Original project:
-
-* https://github.com/Sk1erLLC/PopupEvents/
-
-## Status
-
-> 🚧 **Work in Progress**
->
-> Prompt Overlay is currently under active development. Features will be implemented incrementally, and some functionality may change before the first stable release.
+Prompt Overlay was inspired by [Popup Events](https://github.com/Sk1erLLC/PopupEvents/) by Sk1er LLC. It is an independent implementation for modern Minecraft versions with a new codebase and expanded scope.

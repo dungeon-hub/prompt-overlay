@@ -4,7 +4,9 @@
   "package": "net.dungeonhub.promptoverlay.mixin",
   "compatibilityLevel": "JAVA_25",
   "client": [
-    "KeybindsMixin"
+    "KeybindsMixin",
+    "ResourcefulConfigParsingUtilsPatch",
+    "ResourcefulConfigPresetsSelectorPatch"
   ],
   "injectors": {
     "defaultRequire": 1

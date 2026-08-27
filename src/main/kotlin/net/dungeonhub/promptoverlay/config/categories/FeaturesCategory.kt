@@ -25,8 +25,15 @@ object FeaturesCategory : CategoryKt("features") {
 
     val darkAuctionTime by int("dark_auction_notification_time", 15) {
         name = Literal("DA Notification time")
-        description = Literal("Change how many seconds before the dark auction you'll be notified.")
+        description = Literal("Change how many seconds before the dark auction you'll want to be notified.")
         range = 5..60
+        slider = true
+    }
+
+    val travelingZooTime by int("traveling_zoo_notification_time", 20) {
+        name = Literal("Traveling Zoo Notification time")
+        description = Literal("Change how many seconds before the traveling zoo you'll want to be notified.")
+        range = 10..120
         slider = true
     }
 
@@ -45,7 +52,9 @@ object FeaturesCategory : CategoryKt("features") {
     val ignoredContacts get() = parseContacts(_ignoredContacts)
 
     init {
-        ResourcefulConfigUI.registerElementRenderer(Identifier.fromNamespaceAndPath(MOD_ID, "ignored_abiphone_contacts_renderer"), { IgnoredAbiphoneContactsRenderer(it) })
+        ResourcefulConfigUI.registerElementRenderer(Identifier.fromNamespaceAndPath(MOD_ID, "ignored_abiphone_contacts_renderer")) {
+            IgnoredAbiphoneContactsRenderer(it)
+        }
     }
 
     private data class IgnoredAbiphoneContactsRenderer(val element: ResourcefulConfigElement?) : ResourcefulConfigElementRenderer {

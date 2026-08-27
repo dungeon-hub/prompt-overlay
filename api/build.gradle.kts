@@ -32,6 +32,10 @@ dependencies {
 
     compileOnly("net.fabricmc:fabric-loader:${project.property("loader_version")}")
     compileOnly("net.fabricmc:fabric-language-kotlin:${project.property("kotlin_loader_version")}")
+
+    testImplementation(kotlin("test"))
+    testImplementation("org.mockito:mockito-core:5.20.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.10.1")
 }
 
 tasks.withType<JavaCompile>().configureEach {

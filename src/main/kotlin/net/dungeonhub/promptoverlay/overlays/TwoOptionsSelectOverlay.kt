@@ -25,6 +25,8 @@ class TwoOptionsSelectOverlay(
         }
     }
 
+    override fun dismissText() = super<TwoActionsOverlay>.dismissText()
+
     override fun accept() {
         firstOption()
     }

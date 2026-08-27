@@ -35,6 +35,23 @@ object PromptOverlay : ClientModInitializer, OverlayHandler {
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             dispatcher.register(
                 ClientCommands.literal("prompt-overlay")
+                    .then(
+                        ClientCommands.literal("debug")
+                            .then(
+                                ClientCommands.literal("test-prompt").executes {
+                                    OverlayFeature.setOverlay(object : FriendRequestOverlay("Taubsie") {
+                                        override fun accept() {
+                                            Minecraft.getInstance().execute {
+                                                // We're sending a friend request to me explicitly here - let's call this an easter egg
+                                                Minecraft.getInstance().player?.connection?.sendCommand("friend $from")
+                                            }
+                                        }
+                                        override fun deny() {}
+                                    })
+                                    return@executes 1
+                                }
+                            )
+                    )
                     .executes {
                         Minecraft.getInstance().schedule {
                             Minecraft.getInstance().setScreenAndShow(ResourcefulConfigScreen.getFactory(MOD_ID).apply(null))
@@ -42,18 +59,6 @@ object PromptOverlay : ClientModInitializer, OverlayHandler {
                         return@executes 1
                     }
             )
-        }
-
-        if (isDev) {
-            ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
-                dispatcher.register(
-                    ClientCommands.literal("pot")
-                        .executes {
-                            OverlayFeature.setOverlay(FriendRequestOverlay("Taubsie"))
-                            return@executes 1
-                        }
-                )
-            }
         }
 
         KeyMappingService.init()

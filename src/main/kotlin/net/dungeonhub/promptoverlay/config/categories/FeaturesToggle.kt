@@ -46,8 +46,18 @@ object FeaturesToggle : ObjectKt() {
         name = Literal("Skyblock Trade Request")
     }
 
+    val starlynSisterRewards by boolean("show_starlyn_sister_rewards", true) {
+        name = Literal("Starlyn Sister Rewards")
+    }
+
     val trapperHunt by boolean("show_trapper_hunt", true) {
         name = Literal("Trapper Hunt")
+        description = Literal("Gives you a prompt to call Trevor after another hunt task is available. Note: Requires you to have an active Cookie Buff.")
+    }
+
+    val travelingZoo by boolean("show_traveling_zoo_warp", true) {
+        name = Literal("Traveling Zoo")
+        description = Literal("Show the Traveling Zoo Warp reminder.")
     }
 
     val trophyFishGg by boolean("show_trophy_fish_gg", true) {
