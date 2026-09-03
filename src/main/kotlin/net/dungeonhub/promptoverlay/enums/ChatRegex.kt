@@ -198,7 +198,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         OverlayFeature.setOverlay(SkyblockTradeOverlay(player, acceptCommand))
     }),
-    StarlynSisterRewards(Regex("Come see me at §6Torrhus Canyon §for §e§lCLICK HERE§f to claim your rewards!"), FeaturesToggle::starlynSisterRewards, action=action@{ message, _ ->
+    StarlynSisterRewards(Regex("Come see me at (?:§2Moonglade Marsh|§6Torrhus Canyon) §for §e§lCLICK HERE§f to claim your rewards!"), FeaturesToggle::starlynSisterRewards, action=action@{ message, _ ->
         findClickCommand(message) { it == "/starlynsisterrewards" } ?: return@action
 
         OverlayFeature.setOverlay(StarlynSisterRewardsOverlay())
