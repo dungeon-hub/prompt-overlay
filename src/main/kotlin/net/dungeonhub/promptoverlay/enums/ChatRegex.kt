@@ -61,7 +61,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         OverlayFeature.setOverlay(CatacombsRequeueOverlay("$type $floor"))
     }),
     DismissableNotification(Regex(""), FeaturesToggle::dismissableNotification, action=action@{ message, _ ->
-        val dismissCommand = findClickCommand(message) { it.startsWith("/dismissnotification ") } ?: return@action
+        val dismissCommand = findClickCommand(message) { it.startsWith("/dismissnotification ") }?.takeIf { it.startsWith("/dismissnotification ") } ?: return@action
 
         OverlayFeature.setOverlay(DismissableNotificationOverlay(message, dismissCommand))
     }),
