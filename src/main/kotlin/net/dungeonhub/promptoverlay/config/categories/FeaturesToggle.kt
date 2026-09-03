@@ -16,8 +16,17 @@ object FeaturesToggle : ObjectKt() {
         description = Literal("Show the Dark Auction Warp reminder.")
     }
 
+    val dismissableNotification by boolean("show_dismissable_notification", true) {
+        name = Literal("Dismissable Notification")
+        description = Literal("Show a prompt for dismissable notifications, such as tutorial messages teaching you about the game mechanics.")
+    }
+
     val duelInvite by boolean("show_duel_invite", true) {
         name = Literal("Duel Invite")
+    }
+
+    val eventRewards by boolean("show_event_rewards", true) {
+        name = Literal("Event Rewards")
     }
 
     val friendRequest by boolean("show_friend_request", true) {

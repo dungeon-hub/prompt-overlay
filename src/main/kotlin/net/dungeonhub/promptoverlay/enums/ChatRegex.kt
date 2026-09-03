@@ -9,7 +9,9 @@ import net.dungeonhub.promptoverlay.feature.OverlayFeature
 import net.dungeonhub.promptoverlay.feature.ScheduleHandler
 import net.dungeonhub.promptoverlay.overlays.AbiphoneCallOverlay
 import net.dungeonhub.promptoverlay.overlays.CatacombsRequeueOverlay
+import net.dungeonhub.promptoverlay.overlays.DismissableNotificationOverlay
 import net.dungeonhub.promptoverlay.overlays.DuelInviteOverlay
+import net.dungeonhub.promptoverlay.overlays.EventRewardsOverlay
 import net.dungeonhub.promptoverlay.overlays.FiveOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.FourOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
@@ -54,15 +56,25 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         }
     }),
     CatacombsRequeue(Regex("Click §e§lHERE §7to re-queue into (§c§lMM§c |§c§a)The Catacombs"), FeaturesToggle::catacombsRequeue, action=action@{ message, _ ->
-        val info = extractCatacombsInfo(message) ?: return@action
-        val (type, floor) = info
+        val (type, floor) = extractCatacombsInfo(message) ?: return@action
+
         OverlayFeature.setOverlay(CatacombsRequeueOverlay("$type $floor"))
+    }),
+    DismissableNotification(Regex(""), FeaturesToggle::dismissableNotification, action=action@{ message, _ ->
+        val dismissCommand = findClickCommand(message) { it.startsWith("/dismissnotification ") } ?: return@action
+
+        OverlayFeature.setOverlay(DismissableNotificationOverlay(message, dismissCommand))
     }),
     DuelInvite(Regex("(\\[.*] )?(?<player>\\S{1,16}) has invited you to (?<duel>\\S+)!"), FeaturesToggle::duelInvite, action=action@{ _, result ->
         val player = result.groups["player"]?.value ?: return@action
         val duel = result.groups["duel"]?.value ?: return@action
 
         OverlayFeature.setOverlay(DuelInviteOverlay(player, duel))
+    }),
+    EventRewards(Regex("§e§lCLICK HERE §eto claim your rewards!"), FeaturesToggle::eventRewards, action=action@{ message, _ ->
+        findClickCommand(message) { it == "/vieweventrewards" } ?: return@action
+
+        OverlayFeature.setOverlay(EventRewardsOverlay())
     }),
     FriendRequest(Regex("Friend request from ((?<rank>\\[.+] )?(?<player>\\S{1,16})).*"), FeaturesToggle::friendRequest, action=action@{ _, result ->
         val player = result.groups["player"]?.value ?: return@action
@@ -91,7 +103,12 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         when(responses.size) {
             1 -> {
-                OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0]))
+                if(ChatFormatting.stripFormatting(texts[0]) == "LEAVE" && isCritterSafariLeave()) {
+                    // The user was prompted if they want to leave the Critter Safari
+                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0], "Leave the Critter Safari?"))
+                } else {
+                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0]))
+                }
             }
 
             2 -> {
@@ -211,6 +228,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val floorPattern = Regex("Floor (I{1,3}|IV|VI{0,2})$")
         val abiphoneCallerPattern = Regex("✆ (.+) (§e)?✆")
         val hoppityCallPattern = Regex("\\[NPC] Hoppity: ✆ I just got a new Chocolate Rabbit and was wondering if you wanted to buy it\\.")
+        val critterSafariLeavePattern = Regex("§fWould you like to leave the §2Critter Safari§f?")
         val guildInvitePattern = Regex("has invited you to join their guild, (.+)!")
 
         var lastTrapperQuest: Instant? = null
@@ -228,8 +246,14 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         }
 
         private fun isHoppityOptionAccept(): Boolean {
-            return ChatHandler.findInHistory(5) { message ->
+            return ChatHandler.findInHistory(10) { message ->
                 hoppityCallPattern.containsMatchIn(ChatFormatting.stripFormatting(message) ?: "")
+            } != null
+        }
+
+        private fun isCritterSafariLeave(): Boolean {
+            return ChatHandler.findInHistory(10) { message ->
+                critterSafariLeavePattern.containsMatchIn(message)
             } != null
         }
 
