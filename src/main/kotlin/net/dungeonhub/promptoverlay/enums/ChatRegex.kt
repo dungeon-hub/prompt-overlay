@@ -34,6 +34,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.contents.PlainTextContents
+import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
@@ -90,25 +91,25 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         OverlayFeature.setOverlay(GuildRequestOverlay(inviter, guildName))
     }),
-    OptionSelect(Regex("§eSelect an option: "), FeaturesToggle::npcOptionSelection, action=action@{ message, _ ->
+    OptionSelect(Regex("Select an option: "), FeaturesToggle::npcOptionSelection, action=action@{ message, _ ->
         val optionComponent = findComponent(message) { ChatFormatting.stripFormatting(((it as? MutableComponent)?.contents as? PlainTextContents.LiteralContents)?.text)?.trim() == "Select an option:" } ?: return@action
 
         val responses = optionComponent.siblings
 
-        if(!responses.all { (it.style.clickEvent as? ClickEvent.RunCommand)?.command?.startsWith("/selectnpcoption ") == true }) return@action
+        if(!responses.all { (it.style.clickEvent as? ClickEvent.Custom)?.id?.equals(dialogueResponseId) == true }) return@action
 
         val texts = responses.mapNotNull { it.string.trim().replace("[", "").replace("]", "") }
-        val commands = responses.mapNotNull { (it.style.clickEvent as? ClickEvent.RunCommand)?.command }.map { if(it.startsWith("/")) it.substring(1) else it }
+        val clickEvents = responses.mapNotNull { (it.style.clickEvent as? ClickEvent.Custom) }.filter { it.id == dialogueResponseId }
 
-        if(responses.size != texts.size || responses.size != commands.size) return@action
+        if(responses.size != texts.size || responses.size != clickEvents.size) return@action
 
         when(responses.size) {
             1 -> {
                 if(ChatFormatting.stripFormatting(texts[0]) == "LEAVE" && isCritterSafariLeave()) {
                     // The user was prompted if they want to leave the Critter Safari
-                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0], "Leave the Critter Safari?"))
+                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], clickEvents[0], "Leave the Critter Safari?"))
                 } else {
-                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0]))
+                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], clickEvents[0]))
                 }
             }
 
@@ -118,14 +119,14 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                     OverlayFeature.setOverlay(
                         TwoOptionsSelectOverlay(
                             texts[0],
-                            commands[0],
+                            clickEvents[0],
                             texts[1],
-                            commands[1],
+                            clickEvents[1],
                             "Accept Hoppity's Chocolate Rabbit?"
                         )
                     )
                 } else {
-                    OverlayFeature.setOverlay(TwoOptionsSelectOverlay(texts[0], commands[0], texts[1], commands[1]))
+                    OverlayFeature.setOverlay(TwoOptionsSelectOverlay(texts[0], clickEvents[0], texts[1], clickEvents[1]))
                 }
             }
 
@@ -133,11 +134,11 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 OverlayFeature.setOverlay(
                     ThreeOptionsSelectOverlay(
                         texts[0],
-                        commands[0],
+                        clickEvents[0],
                         texts[1],
-                        commands[1],
+                        clickEvents[1],
                         texts[2],
-                        commands[2]
+                        clickEvents[2]
                     )
                 )
             }
@@ -146,13 +147,13 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 OverlayFeature.setOverlay(
                     FourOptionsSelectOverlay(
                         texts[0],
-                        commands[0],
+                        clickEvents[0],
                         texts[1],
-                        commands[1],
+                        clickEvents[1],
                         texts[2],
-                        commands[2],
+                        clickEvents[2],
                         texts[3],
-                        commands[3]
+                        clickEvents[3]
                     )
                 )
             }
@@ -161,15 +162,15 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 OverlayFeature.setOverlay(
                     FiveOptionsSelectOverlay(
                         texts[0],
-                        commands[0],
+                        clickEvents[0],
                         texts[1],
-                        commands[1],
+                        clickEvents[1],
                         texts[2],
-                        commands[2],
+                        clickEvents[2],
                         texts[3],
-                        commands[3],
+                        clickEvents[3],
                         texts[4],
-                        commands[4]
+                        clickEvents[4]
                     )
                 )
             }
@@ -234,6 +235,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val hoppityCallPattern = Regex("\\[NPC] Hoppity: ✆ I just got a new Chocolate Rabbit and was wondering if you wanted to buy it\\.")
         val critterSafariLeavePattern = Regex("§fWould you like to leave the §2Critter Safari§f?")
         val guildInvitePattern = Regex("has invited you to join their guild, (.+)!")
+        val dialogueResponseId = Identifier.fromNamespaceAndPath("skyblock", "dialogue_response")
 
         var lastTrapperQuest: Instant? = null
 

@@ -5,12 +5,14 @@ import net.dungeonhub.promptoverlay.api.render.OneActionOverlay
 import net.dungeonhub.promptoverlay.api.render.OneOptionOverlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket
 import java.awt.Color
 
 class SingleOptionSelectOverlay(
     val firstOption: String,
-    val firstCommand: String,
+    val firstAction: ClickEvent.Custom,
     messageOverride: String? = null
 ): AcceptableOverlay, OneActionOverlay, OneOptionOverlay {
     override val borderColor: Color = Color(OverlayCategory.optionSelectColor)
@@ -18,7 +20,7 @@ class SingleOptionSelectOverlay(
 
     override fun firstOption() {
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand(firstCommand)
+            Minecraft.getInstance().player?.connection?.send(ServerboundCustomClickActionPacket(firstAction.id(), firstAction.payload()))
         }
     }
 
