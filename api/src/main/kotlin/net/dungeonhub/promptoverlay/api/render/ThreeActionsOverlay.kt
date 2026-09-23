@@ -12,7 +12,11 @@ interface ThreeActionsOverlay : Overlay, TwoOptionsOverlay {
     /**
      * @return The key currently set for selecting the third option.
      */
-    fun thirdOptionKey(): String = PromptOverlayApi.getKeyMappingProvider().thirdOptionKeyName
+    fun thirdOptionKey(): String = try {
+        PromptOverlayApi.getKeyMappingProvider().thirdOptionKeyName
+    } catch (_: IllegalStateException) {
+        ""
+    }
 
     fun thirdOption()
 
