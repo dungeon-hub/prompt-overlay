@@ -51,6 +51,10 @@ object FeaturesToggle : ObjectKt() {
         name = Literal("Party Invites")
     }
 
+    val safariMilestoneReminder by boolean("show_safari_milestone_reminder", true) {
+        name = Literal("Unclaimed Safari Milestone Reminder")
+    }
+
     val skyblockTrade by boolean("show_skyblock_trade", true) {
         name = Literal("Skyblock Trade Request")
     }

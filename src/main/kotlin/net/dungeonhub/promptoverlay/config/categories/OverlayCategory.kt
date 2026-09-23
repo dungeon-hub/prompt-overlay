@@ -145,6 +145,11 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("The color of the party invite overlay.")
     }
 
+    val safariMilestoneReminderColor by color("safari_milestone_reminder_color", Color.ORANGE.rgb) {
+        name = Literal("Safari Milestone Reminder Color")
+        description = Literal("The color of the safari milestone reminder overlay.")
+    }
+
     val starlynSisterColor by color("starlyn_sister_color", Color.YELLOW.rgb) {
         name = Literal("Starlyn Sister Color")
         description = Literal("The color of the starlyn sister rewards overlay.")

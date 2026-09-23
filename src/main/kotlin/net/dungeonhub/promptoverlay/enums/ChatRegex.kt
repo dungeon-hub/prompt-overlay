@@ -19,6 +19,7 @@ import net.dungeonhub.promptoverlay.overlays.GuildRequestOverlay
 import net.dungeonhub.promptoverlay.overlays.TwoOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.PartyCommandOverlay
 import net.dungeonhub.promptoverlay.overlays.PartyInviteOverlay
+import net.dungeonhub.promptoverlay.overlays.SafariMilestoneReminderOverlay
 import net.dungeonhub.promptoverlay.overlays.SingleOptionSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.SkyblockTradeOverlay
 import net.dungeonhub.promptoverlay.overlays.StarlynSisterRewardsOverlay
@@ -191,6 +192,9 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val player = result.groups["player"]?.value ?: return@action
 
         OverlayFeature.setOverlay(PartyInviteOverlay(player))
+    }),
+    SafariMilestoneReminder(Regex("§2§lMILESTONES! §aYou have unclaimed §2Safari Milestones§a!"), FeaturesToggle::safariMilestoneReminder, action=action@{ _, _ ->
+        OverlayFeature.setOverlay(SafariMilestoneReminderOverlay())
     }),
     SkyblockTrade(Regex("(?<player>\\S{1,16}) (?:§.)?has sent you a trade request"), FeaturesToggle::skyblockTrade, action=action@{ message, result ->
         val player = result.groups["player"]?.value ?: return@action
