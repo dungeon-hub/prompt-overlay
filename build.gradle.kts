@@ -2,9 +2,9 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "2.3.21"
-    kotlin("plugin.serialization") version "2.3.21"
-    id("net.fabricmc.fabric-loom") version "1.17-SNAPSHOT"
+    kotlin("jvm") version "2.4.20"
+    kotlin("plugin.serialization") version "2.4.20"
+    id("net.fabricmc.fabric-loom") version "1.18-SNAPSHOT"
     id("com.gradleup.shadow") version "9.4.2"
     id("maven-publish")
 }
@@ -57,9 +57,9 @@ dependencies {
     implementation("net.fabricmc:fabric-loader:${project.property("loader_version")}")
     implementation("net.fabricmc:fabric-language-kotlin:${project.property("kotlin_loader_version")}")
 
-    implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
+    implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_api_version")}")
 
-    implementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-26.2:5.0.0")
+    implementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-26.3:6.0.0")
     val resourcefulConfigKt = "com.teamresourceful.resourcefulconfigkt:resourcefulconfigkt-26.1-rc-1:4.0.0-beta.1"
     implementation(resourcefulConfigKt)
     shadow(resourcefulConfigKt) { // TODO just use the dependency on the mod once (if) it becomes available on Modrinth

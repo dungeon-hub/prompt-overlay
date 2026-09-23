@@ -9,15 +9,14 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper
 import net.minecraft.client.KeyMapping
 import net.minecraft.client.Minecraft
 import net.minecraft.resources.Identifier
-import org.lwjgl.glfw.GLFW
 
 object KeyMappingService : KeyMappingProvider {
     private val category = KeyMapping.Category(Identifier.fromNamespaceAndPath(PromptOverlay.MOD_ID, "keybinds"))
 
     val acceptKey = KeyMapping(
         "key.prompt-overlay.accept",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_Z,
+        InputConstants.Type.KEYBOARD,
+        InputConstants.KEY_Z,
         category,
         0
     )
@@ -25,8 +24,8 @@ object KeyMappingService : KeyMappingProvider {
 
     val denyKey = KeyMapping(
         "key.prompt-overlay.deny",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_N,
+        InputConstants.Type.KEYBOARD,
+        InputConstants.KEY_N,
         category,
         1
     )
@@ -34,8 +33,8 @@ object KeyMappingService : KeyMappingProvider {
 
     val dismissKey = KeyMapping(
         "key.prompt-overlay.dismiss",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_X,
+        InputConstants.Type.KEYBOARD,
+        InputConstants.KEY_X,
         category,
         2
     )
@@ -43,8 +42,8 @@ object KeyMappingService : KeyMappingProvider {
 
     val firstOptionKey = KeyMapping(
         "key.prompt-overlay.first-option",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_1,
+        InputConstants.Type.KEYBOARD,
+        InputConstants.KEY_1,
         category,
         3
     )
@@ -52,8 +51,8 @@ object KeyMappingService : KeyMappingProvider {
 
     val secondOptionKey = KeyMapping(
         "key.prompt-overlay.second-option",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_2,
+        InputConstants.Type.KEYBOARD,
+        InputConstants.KEY_2,
         category,
         4
     )
@@ -61,8 +60,8 @@ object KeyMappingService : KeyMappingProvider {
 
     val thirdOptionKey = KeyMapping(
         "key.prompt-overlay.third-option",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_3,
+        InputConstants.Type.KEYBOARD,
+        InputConstants.KEY_3,
         category,
         5
     )
@@ -70,8 +69,8 @@ object KeyMappingService : KeyMappingProvider {
 
     val fourthOptionKey = KeyMapping(
         "key.prompt-overlay.fourth-option",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_4,
+        InputConstants.Type.KEYBOARD,
+        InputConstants.KEY_4,
         category,
         6
     )
@@ -79,8 +78,8 @@ object KeyMappingService : KeyMappingProvider {
 
     val fifthOptionKey = KeyMapping(
         "key.prompt-overlay.fifth-option",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_5,
+        InputConstants.Type.KEYBOARD,
+        InputConstants.KEY_5,
         category,
         7
     )
