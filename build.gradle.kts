@@ -59,7 +59,7 @@ dependencies {
 
     implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_api_version")}")
 
-    implementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-26.3:6.0.0")
+    implementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-26.3:6.0.1")
     val resourcefulConfigKt = "com.teamresourceful.resourcefulconfigkt:resourcefulconfigkt-26.1-rc-1:4.0.0-beta.1"
     implementation(resourcefulConfigKt)
     shadow(resourcefulConfigKt) { // TODO just use the dependency on the mod once (if) it becomes available on Modrinth
