@@ -6,7 +6,11 @@ interface TwoOptionsOverlay : OneOptionOverlay {
     /**
      * @return The key currently set for selecting the second option.
      */
-    fun secondOptionKey(): String = PromptOverlayApi.getKeyMappingProvider().secondOptionKeyName
+    fun secondOptionKey(): String = try {
+        PromptOverlayApi.getKeyMappingProvider().secondOptionKeyName
+    } catch (_: IllegalStateException) {
+        ""
+    }
 
     fun secondOption()
 }
