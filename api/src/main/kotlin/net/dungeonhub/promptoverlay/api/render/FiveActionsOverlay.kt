@@ -10,7 +10,11 @@ interface FiveActionsOverlay : FourActionsOverlay {
     /**
      * @return The key currently set for selecting the fifth option.
      */
-    fun fifthOptionKey(): String = PromptOverlayApi.getKeyMappingProvider().fifthOptionKeyName
+    fun fifthOptionKey(): String = try {
+        PromptOverlayApi.getKeyMappingProvider().fifthOptionKeyName
+    } catch (_: IllegalStateException) {
+        ""
+    }
 
     fun fifthOption()
 

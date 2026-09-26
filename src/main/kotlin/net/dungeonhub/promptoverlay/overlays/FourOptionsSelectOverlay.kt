@@ -3,18 +3,20 @@ package net.dungeonhub.promptoverlay.overlays
 import net.dungeonhub.promptoverlay.api.render.FourActionsOverlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket
 import java.awt.Color
 
 class FourOptionsSelectOverlay(
     firstOption: String,
-    val firstCommand: String,
+    val firstAction: ClickEvent.Custom,
     secondOption: String,
-    val secondCommand: String,
+    val secondAction: ClickEvent.Custom,
     thirdOption: String,
-    val thirdCommand: String,
+    val thirdAction: ClickEvent.Custom,
     fourthOption: String,
-    val fourthCommand: String,
+    val fourthAction: ClickEvent.Custom,
     messageOverride: String? = null
 ) : FourActionsOverlay {
     override val firstText = "[${firstOptionKey()}] $firstOption"
@@ -27,25 +29,25 @@ class FourOptionsSelectOverlay(
 
     override fun firstOption() {
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand(firstCommand)
+            Minecraft.getInstance().player?.connection?.send(ServerboundCustomClickActionPacket(firstAction.id(), firstAction.payload()))
         }
     }
 
     override fun secondOption() {
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand(secondCommand)
+            Minecraft.getInstance().player?.connection?.send(ServerboundCustomClickActionPacket(secondAction.id(), secondAction.payload()))
         }
     }
 
     override fun thirdOption() {
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand(thirdCommand)
+            Minecraft.getInstance().player?.connection?.send(ServerboundCustomClickActionPacket(thirdAction.id(), thirdAction.payload()))
         }
     }
 
     override fun fourthOption() {
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand(fourthCommand)
+            Minecraft.getInstance().player?.connection?.send(ServerboundCustomClickActionPacket(fourthAction.id(), fourthAction.payload()))
         }
     }
 }
