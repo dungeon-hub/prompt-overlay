@@ -110,9 +110,19 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("The color of the dark auction warp overlay.")
     }
 
+    val dismissableNotificationColor by color("dismissable_notification_color", Color.ORANGE.rgb) {
+        name = Literal("Dismissable Notification Color")
+        description = Literal("The color of the dismissable notification overlay.")
+    }
+
     val duelColor by color("duel_color", Color.RED.rgb) {
         name = Literal("Duel Color")
         description = Literal("The color of the duel invite overlay.")
+    }
+
+    val eventRewards by color("event_rewards_color", Color.DARK_GRAY.rgb) {
+        name = Literal("Event Rewards")
+        description = Literal("The color of the event rewards overlay.")
     }
 
     val friendColor by color("friend_color", Color.PINK.rgb) {
@@ -133,6 +143,11 @@ object OverlayCategory : CategoryKt("overlay") {
     val partyColor by color("party_color", Color.BLUE.rgb) {
         name = Literal("Party Color")
         description = Literal("The color of the party invite overlay.")
+    }
+
+    val safariMilestoneReminderColor by color("safari_milestone_reminder_color", Color.ORANGE.rgb) {
+        name = Literal("Safari Milestone Reminder Color")
+        description = Literal("The color of the safari milestone reminder overlay.")
     }
 
     val starlynSisterColor by color("starlyn_sister_color", Color.YELLOW.rgb) {

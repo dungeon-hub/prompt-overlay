@@ -15,6 +15,7 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.contents.PlainTextContents
+import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
@@ -38,15 +39,25 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         }
     }),
     CatacombsRequeue(Regex("Click §e§lHERE §7to re-queue into (§c§lMM§c |§c§a)The Catacombs"), FeaturesToggle::catacombsRequeue, action=action@{ message, _ ->
-        val info = extractCatacombsInfo(message) ?: return@action
-        val (type, floor) = info
+        val (type, floor) = extractCatacombsInfo(message) ?: return@action
+
         OverlayFeature.setOverlay(CatacombsRequeueOverlay("$type $floor"))
+    }),
+    DismissableNotification(Regex(""), FeaturesToggle::dismissableNotification, action=action@{ message, _ ->
+        val dismissCommand = findClickCommand(message) { it.startsWith("/dismissnotification ") } ?: return@action
+
+        OverlayFeature.setOverlay(DismissableNotificationOverlay(message, dismissCommand))
     }),
     DuelInvite(Regex("(\\[.*] )?(?<player>\\S{1,16}) has invited you to (?<duel>\\S+)!"), FeaturesToggle::duelInvite, action=action@{ _, result ->
         val player = result.groups["player"]?.value ?: return@action
         val duel = result.groups["duel"]?.value ?: return@action
 
         OverlayFeature.setOverlay(DuelInviteOverlay(player, duel))
+    }),
+    EventRewards(Regex("§e§lCLICK HERE §eto claim your rewards!"), FeaturesToggle::eventRewards, action=action@{ message, _ ->
+        findClickCommand(message) { it == "/vieweventrewards" } ?: return@action
+
+        OverlayFeature.setOverlay(EventRewardsOverlay())
     }),
     FriendRequest(Regex("Friend request from ((?<rank>\\[.+] )?(?<player>\\S{1,16})).*"), FeaturesToggle::friendRequest, action=action@{ _, result ->
         val player = result.groups["player"]?.value ?: return@action
@@ -61,21 +72,26 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         OverlayFeature.setOverlay(GuildRequestOverlay(inviter, guildName))
     }),
-    OptionSelect(Regex("§eSelect an option: "), FeaturesToggle::npcOptionSelection, action=action@{ message, _ ->
+    OptionSelect(Regex("Select an option: "), FeaturesToggle::npcOptionSelection, action=action@{ message, _ ->
         val optionComponent = findComponent(message) { ChatFormatting.stripFormatting(((it as? MutableComponent)?.contents as? PlainTextContents.LiteralContents)?.text)?.trim() == "Select an option:" } ?: return@action
 
         val responses = optionComponent.siblings
 
-        if(!responses.all { (it.style.clickEvent as? ClickEvent.RunCommand)?.command?.startsWith("/selectnpcoption ") == true }) return@action
+        if(!responses.all { (it.style.clickEvent as? ClickEvent.Custom)?.id?.equals(dialogueResponseId) == true }) return@action
 
         val texts = responses.mapNotNull { it.string.trim().replace("[", "").replace("]", "") }
-        val commands = responses.mapNotNull { (it.style.clickEvent as? ClickEvent.RunCommand)?.command }.map { if(it.startsWith("/")) it.substring(1) else it }
+        val clickEvents = responses.mapNotNull { (it.style.clickEvent as? ClickEvent.Custom) }.filter { it.id == dialogueResponseId }
 
-        if(responses.size != texts.size || responses.size != commands.size) return@action
+        if(responses.size != texts.size || responses.size != clickEvents.size) return@action
 
         when(responses.size) {
             1 -> {
-                OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0]))
+                if(ChatFormatting.stripFormatting(texts[0]) == "LEAVE" && isCritterSafariLeave()) {
+                    // The user was prompted if they want to leave the Critter Safari
+                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], clickEvents[0], "Leave the Critter Safari?"))
+                } else {
+                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], clickEvents[0]))
+                }
             }
 
             2 -> {
@@ -84,14 +100,14 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                     OverlayFeature.setOverlay(
                         TwoOptionsSelectOverlay(
                             texts[0],
-                            commands[0],
+                            clickEvents[0],
                             texts[1],
-                            commands[1],
+                            clickEvents[1],
                             "Accept Hoppity's Chocolate Rabbit?"
                         )
                     )
                 } else {
-                    OverlayFeature.setOverlay(TwoOptionsSelectOverlay(texts[0], commands[0], texts[1], commands[1]))
+                    OverlayFeature.setOverlay(TwoOptionsSelectOverlay(texts[0], clickEvents[0], texts[1], clickEvents[1]))
                 }
             }
 
@@ -99,11 +115,11 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 OverlayFeature.setOverlay(
                     ThreeOptionsSelectOverlay(
                         texts[0],
-                        commands[0],
+                        clickEvents[0],
                         texts[1],
-                        commands[1],
+                        clickEvents[1],
                         texts[2],
-                        commands[2]
+                        clickEvents[2]
                     )
                 )
             }
@@ -112,13 +128,13 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 OverlayFeature.setOverlay(
                     FourOptionsSelectOverlay(
                         texts[0],
-                        commands[0],
+                        clickEvents[0],
                         texts[1],
-                        commands[1],
+                        clickEvents[1],
                         texts[2],
-                        commands[2],
+                        clickEvents[2],
                         texts[3],
-                        commands[3]
+                        clickEvents[3]
                     )
                 )
             }
@@ -127,15 +143,15 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 OverlayFeature.setOverlay(
                     FiveOptionsSelectOverlay(
                         texts[0],
-                        commands[0],
+                        clickEvents[0],
                         texts[1],
-                        commands[1],
+                        clickEvents[1],
                         texts[2],
-                        commands[2],
+                        clickEvents[2],
                         texts[3],
-                        commands[3],
+                        clickEvents[3],
                         texts[4],
-                        commands[4]
+                        clickEvents[4]
                     )
                 )
             }
@@ -159,13 +175,16 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         OverlayFeature.setOverlay(PartyInviteOverlay(player))
     }),
+    SafariMilestoneReminder(Regex("§2§lMILESTONES! §aYou have unclaimed §2Safari Milestones§a!"), FeaturesToggle::safariMilestoneReminder, action=action@{ _, _ ->
+        OverlayFeature.setOverlay(SafariMilestoneReminderOverlay())
+    }),
     SkyblockTrade(Regex("(?<player>\\S{1,16}) (?:§.)?has sent you a trade request"), FeaturesToggle::skyblockTrade, action=action@{ message, result ->
         val player = result.groups["player"]?.value ?: return@action
         val acceptCommand = findClickCommand(message) { it.startsWith("/tradeaccept") } ?: return@action
 
         OverlayFeature.setOverlay(SkyblockTradeOverlay(player, acceptCommand))
     }),
-    StarlynSisterRewards(Regex("Come see me at §6Torrhus Canyon §for §e§lCLICK HERE§f to claim your rewards!"), FeaturesToggle::starlynSisterRewards, action=action@{ message, _ ->
+    StarlynSisterRewards(Regex("Come see me at (?:§2Moonglade Marsh|§6Torrhus Canyon) §for §e§lCLICK HERE§f to claim your rewards!"), FeaturesToggle::starlynSisterRewards, action=action@{ message, _ ->
         findClickCommand(message) { it == "/starlynsisterrewards" } ?: return@action
 
         OverlayFeature.setOverlay(StarlynSisterRewardsOverlay())
@@ -198,7 +217,9 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val floorPattern = Regex("Floor (I{1,3}|IV|VI{0,2})$")
         val abiphoneCallerPattern = Regex("✆ (.+) (§e)?✆")
         val hoppityCallPattern = Regex("\\[NPC] Hoppity: ✆ I just got a new Chocolate Rabbit and was wondering if you wanted to buy it\\.")
+        val critterSafariLeavePattern = Regex("§fWould you like to leave the §2Critter Safari§f?")
         val guildInvitePattern = Regex("has invited you to join their guild, (.+)!")
+        val dialogueResponseId = Identifier.fromNamespaceAndPath("skyblock", "dialogue_response")
 
         var lastTrapperQuest: Instant? = null
 
@@ -215,8 +236,14 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         }
 
         private fun isHoppityOptionAccept(): Boolean {
-            return ChatHandler.findInHistory(5) { message ->
+            return ChatHandler.findInHistory(10) { message ->
                 hoppityCallPattern.containsMatchIn(ChatFormatting.stripFormatting(message) ?: "")
+            } != null
+        }
+
+        private fun isCritterSafariLeave(): Boolean {
+            return ChatHandler.findInHistory(10) { message ->
+                critterSafariLeavePattern.containsMatchIn(message)
             } != null
         }
 
