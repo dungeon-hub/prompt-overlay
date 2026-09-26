@@ -59,7 +59,7 @@ dependencies {
 
     implementation("net.fabricmc.fabric-api:fabric-api:${project.property("fabric_version")}")
 
-    implementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-26.2:5.0.0")
+    implementation("com.teamresourceful.resourcefulconfig:resourcefulconfig-fabric-${project.property("minecraft_version")}:${project.property("resourceful_config_version")}")
     val resourcefulConfigKt = "com.teamresourceful.resourcefulconfigkt:resourcefulconfigkt-26.1-rc-1:4.0.0-beta.1"
     implementation(resourcefulConfigKt)
     shadow(resourcefulConfigKt) { // TODO just use the dependency on the mod once (if) it becomes available on Modrinth
@@ -90,7 +90,8 @@ tasks.processResources {
             "version" to project.version,
             "minecraft_version" to project.property("minecraft_version")!!,
             "loader_version" to project.property("loader_version")!!,
-            "kotlin_loader_version" to project.property("kotlin_loader_version")!!
+            "kotlin_loader_version" to project.property("kotlin_loader_version")!!,
+            "resourceful_config_version" to project.property("resourceful_config_version")!!
         )
     }
 }
