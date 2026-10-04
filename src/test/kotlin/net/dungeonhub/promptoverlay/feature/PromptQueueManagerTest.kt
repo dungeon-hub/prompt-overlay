@@ -79,7 +79,7 @@ class PromptQueueManagerTest {
         fixture.manager.enqueue(first)
         val firstId = fixture.manager.currentPrompt()!!.id
         fixture.manager.enqueue(second)
-        val secondId = firstId + 1
+        val secondId = java.util.UUID.randomUUID()
 
         // At t=40s the queued prompt's timeout must not dismiss the first prompt.
         assertFalse(fixture.manager.removePrompt(secondId, RemoveType.Dismiss))

@@ -9,6 +9,10 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 import net.dungeonhub.promptoverlay.PromptOverlay.MOD_ID
 import net.dungeonhub.promptoverlay.api.render.Overlay
+import net.dungeonhub.promptoverlay.api.PromptOutcome
+import net.dungeonhub.promptoverlay.api.PromptRequest
+import net.dungeonhub.promptoverlay.api.PromptRejectionReason
+import net.dungeonhub.promptoverlay.api.PromptSubmissionResult
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.dungeonhub.promptoverlay.enums.PromptAnimation
@@ -28,6 +32,7 @@ object OverlayFeature {
     val currentOverlay: Overlay?
         get() = queue.currentPrompt()?.overlay
     private var hideMessageJob: Job? = null
+    private var expiryJob: Job? = null
     private var transitionJob: Job? = null
 
     private val supervisor = SupervisorJob()
@@ -39,6 +44,7 @@ object OverlayFeature {
         onShow = ::setCurrentOverlay,
         onExit = ::removeCurrentOverlay,
         onExitComplete = { OverlayRenderer.completeAnimatingOut() },
+        onUpdate = ::rescheduleCurrentOverlay,
     )
 
     fun init() {
@@ -52,13 +58,46 @@ object OverlayFeature {
         queue.enqueue(overlay)
     }
 
+    fun submit(request: PromptRequest): PromptSubmissionResult {
+        if (!net.dungeonhub.promptoverlay.api.PromptSource.isValid(request.source.namespace))
+            return PromptSubmissionResult.rejected(PromptRejectionReason.INVALID_SOURCE)
+        val now = System.currentTimeMillis()
+        if (request.expiresAtEpochMillis?.let { it <= now } == true)
+            return PromptSubmissionResult.rejected(PromptRejectionReason.INVALID_EXPIRATION)
+        if (request.displayDurationMillis?.let { it !in MIN_DISPLAY_DURATION_MILLIS..MAX_DISPLAY_DURATION_MILLIS } == true)
+            return PromptSubmissionResult.rejected(PromptRejectionReason.INVALID_DISPLAY_DURATION)
+        if (queue.waitingCount() >= MAX_QUEUED_PROMPTS)
+            return PromptSubmissionResult.rejected(PromptRejectionReason.QUEUE_FULL)
+        val token = Any()
+        val id = java.util.UUID.randomUUID()
+        val handle = LifecyclePromptHandle(id, request.source, token, ::onClientThread, queue)
+        val entry = PromptEntry(id, request.overlay, Clock.System.now(), request.source, token, request.listener,
+            request.expiresAtEpochMillis, request.displayDurationMillis, handle = handle)
+        onClientThread { queue.enqueue(entry) }
+        return PromptSubmissionResult.submitted(handle)
+    }
+
+    private fun onClientThread(operation: () -> Unit) {
+        val minecraft = Minecraft.getInstance()
+        if (minecraft.isSameThread) operation() else minecraft.execute(operation)
+    }
+
     private fun setCurrentOverlay(entry: PromptEntry) {
         OverlayRenderer.startAnimatingIn(entry.enqueuedAt)
+        rescheduleCurrentOverlay(entry)
+    }
+
+    private fun rescheduleCurrentOverlay(entry: PromptEntry) {
         hideMessageJob?.cancel()
         hideMessageJob = scheduler.launch {
             delay(remainingDisplayDuration(entry))
-            removeOverlay(entry.id, RemoveType.Dismiss)
+            onClientThread { removeOverlay(entry.id, RemoveType.Dismiss, PromptOutcome.AUTO_DISMISSED) }
         }
+        expiryJob?.cancel()
+        expiryJob = entry.expiresAtEpochMillis?.let { deadline -> scheduler.launch {
+            delay((deadline - System.currentTimeMillis()).coerceAtLeast(0))
+            onClientThread { queue.expire() }
+        } }
     }
 
     fun removeOverlay(type: RemoveType) {
@@ -66,10 +105,12 @@ object OverlayFeature {
         removeOverlay(entry.id, type)
     }
 
-    private fun removeOverlay(id: Long, type: RemoveType) = queue.removePrompt(id, type)
+    private fun removeOverlay(id: java.util.UUID, type: RemoveType, outcome: PromptOutcome? = null) =
+        if (outcome == null) queue.removePrompt(id, type) else queue.removePrompt(id, type, outcome)
 
     private fun removeCurrentOverlay(entry: PromptEntry, type: RemoveType) {
         hideMessageJob?.cancel()
+        expiryJob?.cancel()
         OverlayRenderer.startAnimatingOut(type)
         transitionJob?.cancel()
         transitionJob = scheduler.launch {
@@ -80,6 +121,7 @@ object OverlayFeature {
 
     internal fun removeOverlay(entry: PromptEntry, type: RemoveType) = removeOverlay(entry.id, type)
     internal fun currentPrompt() = queue.currentPrompt()
+    internal fun markActionFailed(entry: PromptEntry) = queue.markActionFailed(entry.id)
 
     fun render(graphics: GuiGraphicsExtractor) {
         val overlay = (
@@ -182,7 +224,9 @@ object OverlayFeature {
     internal fun autoDismissDelay(overlay: Overlay) = effectiveDisplayDuration(overlay)
 
     internal fun remainingDisplayDuration(entry: PromptEntry, currentTime: Instant = Clock.System.now()) =
-        (autoDismissDelay(entry.overlay) - (currentTime - entry.enqueuedAt)).coerceAtLeast(0.milliseconds)
+        ((entry.displayDurationMillis?.milliseconds ?: autoDismissDelay(entry.overlay)) -
+            (System.currentTimeMillis() - (entry.visibleAtEpochMillis ?: System.currentTimeMillis())).milliseconds)
+            .coerceAtLeast(0.milliseconds)
 
     internal fun dismissProgress(elapsedTime: Duration, overlay: Overlay) =
         (elapsedTime / effectiveDisplayDuration(overlay)).coerceIn(0.0, 1.0)
@@ -200,5 +244,9 @@ object OverlayFeature {
         val shifted = t - 1.0
         return 1.0 + (overshoot + 1.0) * shifted.pow(3.0) + overshoot * shifted.pow(2.0)
     }
+
+    private const val MIN_DISPLAY_DURATION_MILLIS = 500L
+    private const val MAX_DISPLAY_DURATION_MILLIS = 10 * 60 * 1000L
+    private const val MAX_QUEUED_PROMPTS = 100
 
 }

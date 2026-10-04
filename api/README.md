@@ -126,3 +126,75 @@ PromptOverlayApi.setOverlay(InformationOverlay())
 ```
 
 The `dismiss` implementation is optional. Prompt Overlay removes the overlay after the configured dismiss key is pressed regardless of whether the callback is overridden.
+
+## Lifecycle-aware submissions
+
+API 0.4 adds a handle without removing `setOverlay`. Namespaces are lowercase mod-style identifiers and are the diagnostic/ownership identity; display names are optional and never identity. Absolute expiry is measured even while queued, whereas display duration begins when the prompt is shown.
+
+### Kotlin
+
+```kotlin
+val request = PromptRequest(
+    overlay = TradeRequestOverlay(),
+    source = PromptSource("trade-helper"),
+    expiresAtEpochMillis = System.currentTimeMillis() + 30_000,
+    displayDurationMillis = 15_000,
+    listener = object : PromptLifecycleListener {
+        override fun onShown(handle: PromptHandle) = println("shown ${handle.id}")
+        override fun onResolved(handle: PromptHandle, outcome: PromptOutcome) = println(outcome)
+    },
+)
+val handle = PromptOverlayApi.submit(request).handle
+
+// The server withdrew the underlying request:
+handle?.cancel()
+
+// Replace queued/visible content in place, retaining its ID and FIFO position:
+handle?.update(PromptUpdate.builder().overlay(updatedOverlay).build())
+```
+
+### Java
+
+```java
+PromptLifecycleListener listener = new PromptLifecycleListener() {
+    @Override public void onShown(PromptHandle handle) { }
+    @Override public void onResolved(PromptHandle handle, PromptOutcome outcome) {
+        // Switch defensively: future API versions may add outcomes.
+    }
+};
+PromptRequest request = new PromptRequest(
+    overlay, new PromptSource("trade-helper"),
+    System.currentTimeMillis() + 30_000L, 15_000L, listener);
+PromptSubmissionResult result = PromptOverlayApi.submit(request);
+if (result.getStatus() == PromptSubmissionStatus.SUBMITTED) {
+    PromptHandle handle = result.getHandle();
+    handle.update(PromptUpdate.builder()
+        .overlay(updatedOverlay)
+        .expiresAtEpochMillis(System.currentTimeMillis() + 20_000L)
+        .build());
+    // Later, if the underlying event is no longer valid:
+    handle.cancel();
+}
+```
+
+`PromptUpdate.Builder` deliberately distinguishes an unchanged nullable field from clearing it. Content replacement recalculates visible layout but does not replay entry animation or restart display time. Call `restartDisplayTimer(true)` explicitly to restart it. Updating expiry reschedules the absolute deadline; a past deadline expires immediately.
+
+### Outcomes and threading
+
+`onShown` runs at most once; queued expiry has no shown event. Every accepted prompt receives exactly one `onResolved`:
+
+- `ACCEPTED` / `DENIED`: the corresponding local overlay callback completed; this is **not** Hypixel or other server acknowledgement.
+- `DISMISSED_BY_USER`: the local user dismissed it.
+- `AUTO_DISMISSED`: its visible display duration elapsed.
+- `EXPIRED_WHILE_QUEUED` / `EXPIRED_WHILE_VISIBLE`: its absolute deadline elapsed in that state.
+- `CANCELED_BY_SOURCE`: its own handle canceled it; cancellation never calls `Overlay.dismiss()`.
+- `CLEARED_ON_DISCONNECT`: reserved for client cleanup on disconnect.
+- `ACTION_FAILED`: the local action callback threw.
+
+Callbacks and accepted handle operations execute on the Minecraft client thread. `update` and `cancel` may be invoked from any thread; their Boolean reports that processing was accepted, not that a visual transition has completed. Calls once outgoing/resolved return false. Listener failures are logged and isolated from queue advancement. Listeners may submit another prompt. Do not retain world/player objects after resolution without managing their validity.
+
+Submission status is `SUBMITTED` (with handle), `REJECTED` (with `PromptRejectionReason`), or `UNAVAILABLE`. Invalid submissions never enter the queue and receive no callback. Java callers should tolerate unknown future enum values. `UNAVAILABLE` means Prompt Overlay is absent, so optional integrations should use their normal chat/UI fallback. An installed older handler returns `HANDLER_NOT_READY`.
+
+## Migration and compatibility
+
+Existing binaries and source using `PromptOverlayApi.setOverlay(overlay)` remain supported. It still returns `Queued`, `ModNotInstalled`, or `Error`; with a lifecycle handler it bridges through the reserved `legacy-api` source. Use `submit` when cancellation, updates, outcomes, expiry, or queued/visible distinction matter. Keep a fallback for `UNAVAILABLE` just as legacy callers do for `ModNotInstalled`.
