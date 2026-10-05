@@ -41,11 +41,15 @@ object ChatHandler {
      * Retrieves the last N messages from chat history, excluding the current message.
      *
      * @param count The number of messages to retrieve
-     * @return A list of messages, with the most recent first (not including the current message)
+     * @return A list of messages, with the most recent first (if "skipCurrent" is true, not including the current message)
      */
-    fun getLastMessages(count: Int): List<Component> {
-        // Skip the first message (current) and return the next N
-        return messageHistory.drop(1).take(count.coerceAtLeast(0))
+    fun getLastMessages(count: Int, skipCurrent: Boolean = true): List<Component> {
+        return if(skipCurrent) {
+            // Skip the first message (current) and return the next N
+            messageHistory.drop(1).take(count.coerceAtLeast(0))
+        } else {
+            messageHistory.take(count.coerceAtLeast(0))
+        }
     }
 
     /**
@@ -55,7 +59,7 @@ object ChatHandler {
      * @param predicate A function to test each message's string content
      * @return The first matching message component, or null if not found
      */
-    fun findInHistory(count: Int, predicate: (String) -> Boolean): Component? {
-        return getLastMessages(count).firstOrNull { predicate(it.string) }
+    fun findInHistory(count: Int, skipCurrent: Boolean = true, predicate: (String) -> Boolean): Component? {
+        return getLastMessages(count, skipCurrent).firstOrNull { predicate(it.string) }
     }
 }
