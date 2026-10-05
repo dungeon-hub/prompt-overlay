@@ -8,6 +8,7 @@ import net.dungeonhub.promptoverlay.feature.ChatHandler
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
 import net.dungeonhub.promptoverlay.feature.ScheduleHandler
 import net.dungeonhub.promptoverlay.overlays.AbiphoneCallOverlay
+import net.dungeonhub.promptoverlay.overlays.AreaDiscoveryOverlay
 import net.dungeonhub.promptoverlay.overlays.CatacombsRequeueOverlay
 import net.dungeonhub.promptoverlay.overlays.DismissableNotificationOverlay
 import net.dungeonhub.promptoverlay.overlays.DuelInviteOverlay
@@ -27,7 +28,7 @@ import net.dungeonhub.promptoverlay.overlays.ThreeOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperRestartOverlay
 import net.dungeonhub.promptoverlay.overlays.TrophyFishGgOverlay
-import net.dungeonhub.promptoverlay.util.MessageUtil.sendDebug
+import net.dungeonhub.promptoverlay.util.MessageUtil.sendInfo
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
@@ -37,6 +38,7 @@ import net.minecraft.network.chat.contents.PlainTextContents
 import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -55,6 +57,52 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         if(command != null && !FeaturesCategory.ignoredContacts.contains(caller)) {
             OverlayFeature.setOverlay(AbiphoneCallOverlay(caller, command))
+        }
+    }),
+    AreaDiscovery(Regex("^ ?NEW AREA DISCOVERED!"), FeaturesToggle::areaDiscovery, action={ _, _ ->
+        ScheduleHandler.scheduler.launch {
+            delay(10.milliseconds)
+
+            val latestMessages = ChatHandler.getLastMessages(25, false)
+
+            val areaDiscoveryIndex = latestMessages.indexOfFirst {
+                it.string.trim() == "NEW AREA DISCOVERED!"
+            }
+
+            if(areaDiscoveryIndex == -1) {
+                logger.sendInfo("Didn't find an Area Discovery Message, skipping this area")
+                return@launch
+            }
+
+            val messages = latestMessages.subList(0, areaDiscoveryIndex + 1).dropWhile {
+                it.string.trim() != "NEW AREA DISCOVERED!" &&
+                        !it.string.trim().startsWith("■") &&
+                        !it.string.trim().startsWith("\uE067")
+            }.takeWhile {
+                it.string.trim() == "NEW AREA DISCOVERED!" ||
+                        it.string.trim().isEmpty() ||
+                        it.string.trim().startsWith("■") ||
+                        it.string.trim().startsWith("\uE067")
+            }.filter {
+                it.string.trim().isNotEmpty()
+            }
+
+            if(messages.size < 2) {
+                logger.sendInfo("Read not enough messages, only ${messages.size}/2")
+                return@launch
+            }
+
+            val areaDiscoveryMessage = messages[messages.size - 1]
+            val areaName = messages[messages.size - 2]
+            val areaTasks = messages.reversed().drop(2)
+            val title = Component.empty().append(areaDiscoveryMessage).append(areaName)
+
+            val taskList = areaTasks.fold(Component.empty()) { result, task ->
+                if (result == Component.empty()) result.append(task)
+                else result.append(Component.literal("\n")).append(task)
+            }
+
+            OverlayFeature.setOverlay(AreaDiscoveryOverlay(title, taskList))
         }
     }),
     CatacombsRequeue(Regex("Click §e§lHERE §7to re-queue into (§c§lMM§c |§c§a)The Catacombs"), FeaturesToggle::catacombsRequeue, action=action@{ message, _ ->
@@ -183,7 +231,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val partyCommand = PartyCommandOverlay.PartyCommand.getCommand(command)
 
         if(partyCommand == null) {
-            logger.sendDebug("[PO] Unknown party command received, ignoring it: $command")
+            logger.sendInfo("[PO] Unknown party command received, ignoring it: $command")
             return@action
         }
 

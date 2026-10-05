@@ -100,6 +100,11 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("The color of the abiphone call overlay.")
     }
 
+    val areaDiscoveryColor by color("area_discovery_color", Color(0xFFAA00).rgb) {
+        name = Literal("Area Discovery Color")
+        description = Literal("The color of the overlay that appears when discovering a new area.")
+    }
+
     val catacombsRequeueColor by color("catacombs_requeue_color", Color.DARK_GRAY.rgb) {
         name = Literal("Catacombs Requeue Color")
         description = Literal("The color of the catacombs requeue overlay.")

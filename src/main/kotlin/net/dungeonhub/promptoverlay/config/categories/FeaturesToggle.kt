@@ -7,6 +7,10 @@ object FeaturesToggle : ObjectKt() {
         name = Literal("Abiphone Calls")
     }
 
+    val areaDiscovery by boolean("area_discovery", true) {
+        name = Literal("Area Discovery")
+    }
+
     val catacombsRequeue by boolean("show_catacombs_requeue", true) {
         name = Literal("Catacombs Requeue")
     }
