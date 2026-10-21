@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component
 import java.awt.Color
 import kotlin.time.Duration.Companion.seconds
 
-class PartyInviteOverlay(val inviter: String) : AcceptableOverlay, OneActionOverlay {
+open class PartyInviteOverlay(val inviter: String) : AcceptableOverlay, OneActionOverlay {
     override fun accept() {
         Minecraft.getInstance().execute {
             Minecraft.getInstance().player?.connection?.sendCommand("party accept $inviter")
