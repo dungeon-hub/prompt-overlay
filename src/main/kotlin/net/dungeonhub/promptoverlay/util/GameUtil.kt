@@ -5,10 +5,14 @@ import net.dungeonhub.promptoverlay.server.Server
 import net.minecraft.client.Minecraft
 
 object GameUtil {
-    fun getCurrentServer(): Server {
-        val ip = Minecraft.getInstance().currentServer?.ip?.lowercase() ?: return Server.UnknownServer
+    fun getCurrentHostname(): String? {
+        return Minecraft.getInstance().currentServer?.ip?.lowercase()
+    }
 
-        return KnownServer.entries.firstOrNull { it.regex.matches(ip) } ?: Server.UnknownServer
+    fun getCurrentServer(): Server {
+        val hostname = getCurrentHostname() ?: return Server.UnknownServer
+
+        return KnownServer.entries.firstOrNull { it.regex.matches(hostname) } ?: Server.UnknownServer
     }
 
     fun isOnHypixel(): Boolean {

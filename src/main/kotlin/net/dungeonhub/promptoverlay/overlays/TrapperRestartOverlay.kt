@@ -7,7 +7,7 @@ import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 import java.awt.Color
 
-class TrapperRestartOverlay: AcceptableOverlay, OneActionOverlay {
+class TrapperRestartOverlay : AcceptableOverlay, OneActionOverlay {
     override val borderColor: Color = Color(OverlayCategory.trapperColor)
     override val message = Component.literal("Start a new Trapper hunt?")
 
