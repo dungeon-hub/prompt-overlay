@@ -20,7 +20,7 @@ class CubeCraftPartyInviteOverlay(val userText: String) : PartyInviteOverlay(use
         }
     }
 
-    override val secondText = "[${acceptKey()}] Deny"
+    override val secondText = "[${denyKey()}] Deny"
 
     override fun getActionsHeight(width: Int) = super<TwoActionsOverlay>.getActionsHeight(width)
     override fun getActionsWidth(font: Font) = super<TwoActionsOverlay>.getActionsWidth(font)
