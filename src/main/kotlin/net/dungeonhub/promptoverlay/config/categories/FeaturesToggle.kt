@@ -67,6 +67,11 @@ object FeaturesToggle : ObjectKt() {
         name = Literal("Starlyn Sister Rewards")
     }
 
+    val starfallMeetingReminder by boolean("show_starfall_meeting_reminder", false) {
+        name = Literal("Starfall Meeting Reminder")
+        description = Literal("Shows you a reminder when the Starfall Meeting takes place.")
+    }
+
     val trapperHunt by boolean("show_trapper_hunt", true) {
         name = Literal("Trapper Hunt")
         description = Literal("Gives you a prompt to call Trevor after another hunt task is available. Note: Requires you to have an active Cookie Buff.")
