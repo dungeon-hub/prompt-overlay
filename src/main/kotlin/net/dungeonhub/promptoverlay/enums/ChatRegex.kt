@@ -28,6 +28,7 @@ import net.dungeonhub.promptoverlay.overlays.ThreeOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperRestartOverlay
 import net.dungeonhub.promptoverlay.overlays.TrophyFishGgOverlay
+import net.dungeonhub.promptoverlay.overlays.cubecraft.CubeCraftPartyInviteOverlay
 import net.dungeonhub.promptoverlay.util.MessageUtil.sendInfo
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.ClickEvent
@@ -109,6 +110,22 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val (type, floor) = extractCatacombsInfo(message) ?: return@action
 
         OverlayFeature.setOverlay(CatacombsRequeueOverlay("$type $floor"))
+    }),
+    CubeCraftCommands(Regex("ACCEPT \\| DENY"), action=action@{ message, _ ->
+        val acceptComponent = findComponent(message) { it.string == "ACCEPT" && (it.style.clickEvent as? ClickEvent.RunCommand)?.command?.startsWith("/") ?: false } ?: return@action
+        val acceptCommand = (acceptComponent.style.clickEvent as? ClickEvent.RunCommand)?.command ?: return@action
+
+        if(acceptCommand.startsWith("/friend accept ") && FeaturesToggle.friendRequest) {
+            val player = acceptCommand.removePrefix("/friend accept ")
+
+            OverlayFeature.setOverlay(FriendRequestOverlay(player))
+        }
+
+        if(acceptCommand.startsWith("/party accept") && FeaturesToggle.partyInvites) {
+            val player = acceptCommand.removePrefix("/party accept ")
+
+            OverlayFeature.setOverlay(CubeCraftPartyInviteOverlay(player))
+        }
     }),
     DismissableNotification(Regex(""), FeaturesToggle::dismissableNotification, action=action@{ message, _ ->
         val dismissCommand = findClickCommand(message) { it.startsWith("/dismissnotification ") } ?: return@action

@@ -13,6 +13,7 @@ import net.dungeonhub.promptoverlay.config.categories.FeaturesCategory
 import net.dungeonhub.promptoverlay.config.categories.FeaturesToggle
 import net.dungeonhub.promptoverlay.overlays.DarkAuctionWarpOverlay
 import net.dungeonhub.promptoverlay.overlays.TravelingZooWarpOverlay
+import net.dungeonhub.promptoverlay.util.GameUtil
 import net.minecraft.client.Minecraft
 import java.time.Duration as JavaDuration
 import java.time.LocalDateTime as JavaLocalDateTime
@@ -42,7 +43,7 @@ object ScheduleHandler {
 
             delay(timeToEvent - leadTime)
 
-            if(Minecraft.getInstance().level != null && featureToggle()) {
+            if(Minecraft.getInstance().level != null && GameUtil.isOnHypixel() && featureToggle()) {
                 OverlayFeature.setOverlay(overlayBuilder(leadTime))
             }
 
