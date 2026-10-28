@@ -11,9 +11,8 @@ import kotlinx.datetime.toKotlinLocalDateTime
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.categories.FeaturesCategory
 import net.dungeonhub.promptoverlay.config.categories.FeaturesToggle
-import net.dungeonhub.promptoverlay.overlays.DarkAuctionWarpOverlay
-import net.dungeonhub.promptoverlay.overlays.StarfallMeetingReminderOverlay
-import net.dungeonhub.promptoverlay.overlays.TravelingZooWarpOverlay
+import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
+import net.dungeonhub.promptoverlay.overlays.WarpReminderOverlay
 import net.dungeonhub.promptoverlay.util.GameUtil
 import net.minecraft.client.Minecraft
 import java.time.Duration as JavaDuration
@@ -51,22 +50,28 @@ object ScheduleHandler {
     private fun launchScheduledPrompt(timeUntil: () -> Duration, announceBefore: () -> Duration, featureToggle: () -> Boolean, overlayBuilder: (Duration) -> Overlay) {
         scheduler.launch {
             val timeToEvent = timeUntil()
-            val leadTime = announceBefore()
+            val eventTime = Instant.now().plus(timeToEvent.toJavaDuration())
+            val leadTime = announceBefore().coerceAtMost(timeToEvent).coerceAtLeast(Duration.ZERO)
 
             delay(timeToEvent - leadTime)
 
             if(Minecraft.getInstance().level != null && GameUtil.isOnHypixel() && featureToggle()) {
-                OverlayFeature.setOverlay(overlayBuilder(leadTime))
+                OverlayFeature.setOverlay(overlayBuilder(leadTime.inWholeSeconds.seconds))
             }
 
             delay(leadTime)
+
+            // The wall clock might lag behind the monotonic delay, wait until the event has passed to not announce it twice
+            while(Instant.now().isBefore(eventTime)) {
+                delay(JavaDuration.between(Instant.now(), eventTime).toKotlinDuration() + 1.seconds)
+            }
 
             launchScheduledPrompt(timeUntil, announceBefore, featureToggle, overlayBuilder)
         }
     }
 
     private fun launchDarkAuctionPrompt() {
-        launchScheduledPrompt(::timeUntilDarkAuction, { FeaturesCategory.darkAuctionTime.seconds }, FeaturesToggle::darkAuctionWarp) { DarkAuctionWarpOverlay(it) }
+        launchScheduledPrompt(::timeUntilDarkAuction, { FeaturesCategory.darkAuctionTime.seconds }, FeaturesToggle::darkAuctionWarp) { WarpReminderOverlay("Dark Auction", "da", OverlayCategory::darkAuctionColor, it) }
     }
 
     private fun timeUntilDarkAuction(): Duration {
@@ -83,7 +88,7 @@ object ScheduleHandler {
     }
 
     private fun launchTravelingZooPrompt() {
-        launchScheduledPrompt(::timeUntilTravelingZoo, { FeaturesCategory.travelingZooTime.seconds }, FeaturesToggle::travelingZoo) { TravelingZooWarpOverlay(it) }
+        launchScheduledPrompt(::timeUntilTravelingZoo, { FeaturesCategory.travelingZooTime.seconds }, FeaturesToggle::travelingZoo) { WarpReminderOverlay("Traveling Zoo", "hub", OverlayCategory::travelingZooColor, it) }
     }
 
     private fun timeUntilTravelingZoo(): Duration {
@@ -103,30 +108,28 @@ object ScheduleHandler {
     }
 
     private fun launchStarfallMeetingPrompt() {
-        launchScheduledPrompt(::timeUntilStarfallMeeting, { FeaturesCategory.starfallMeetingTime.seconds }, FeaturesToggle::starfallMeetingReminder) { StarfallMeetingReminderOverlay(it) }
+        launchScheduledPrompt(::timeUntilStarfallMeeting, { FeaturesCategory.starfallMeetingTime.seconds }, FeaturesToggle::starfallMeetingReminder) { WarpReminderOverlay("Starfall Meeting", "mines", OverlayCategory::starfallMeetingReminderColor, it) }
     }
 
     private fun timeUntilStarfallMeeting(): Duration {
         return JavaDuration.between(Instant.now(), nextStarfallMeeting()).toKotlinDuration()
     }
 
-    private fun nextStarfallMeeting(now: Instant = Instant.now()): Instant {
+    internal fun nextStarfallMeeting(now: Instant = Instant.now()): Instant {
         if (now.isBefore(firstStarfallMeeting)) {
             return firstStarfallMeeting
         }
 
-        val elapsed = JavaDuration.between(firstStarfallMeeting, now).toKotlinDuration()
-        val currentCycle = (elapsed / starfallMonthDuration).toInt()
-        val monthProgress = elapsed - starfallMonthDuration * currentCycle
+        val monthDuration = starfallMonthDuration.toJavaDuration()
+        val elapsed = JavaDuration.between(firstStarfallMeeting, now)
+        val currentCycle = elapsed.dividedBy(monthDuration)
+        val monthStart = firstStarfallMeeting.plus(monthDuration.multipliedBy(currentCycle))
+        val monthProgress = JavaDuration.between(monthStart, now).toKotlinDuration()
 
         val nextMeetingOffset = starfallMeetingOffsets.firstOrNull {
             it > monthProgress
-        } ?: return firstStarfallMeeting.plus(
-            (starfallMonthDuration * (currentCycle + 1)).toJavaDuration()
-        )
+        } ?: return monthStart.plus(monthDuration)
 
-        return firstStarfallMeeting
-            .plus((starfallMonthDuration * currentCycle).toJavaDuration())
-            .plus(nextMeetingOffset.toJavaDuration())
+        return monthStart.plus(nextMeetingOffset.toJavaDuration())
     }
 }
