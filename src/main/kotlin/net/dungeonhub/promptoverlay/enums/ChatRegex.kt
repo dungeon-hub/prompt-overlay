@@ -7,31 +7,7 @@ import net.dungeonhub.promptoverlay.config.categories.FeaturesToggle
 import net.dungeonhub.promptoverlay.feature.ChatHandler
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
 import net.dungeonhub.promptoverlay.feature.ScheduleHandler
-import net.dungeonhub.promptoverlay.overlays.AbiphoneCallOverlay
-import net.dungeonhub.promptoverlay.overlays.AreaDiscoveryOverlay
-import net.dungeonhub.promptoverlay.overlays.CatacombsRequeueOverlay
-import net.dungeonhub.promptoverlay.overlays.DismissableNotificationOverlay
-import net.dungeonhub.promptoverlay.overlays.DuelInviteOverlay
-import net.dungeonhub.promptoverlay.overlays.EventRewardsOverlay
-import net.dungeonhub.promptoverlay.overlays.FiveOptionsSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.FourOptionsSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
-import net.dungeonhub.promptoverlay.overlays.GuildRequestOverlay
-import net.dungeonhub.promptoverlay.overlays.NewObjectiveOverlay
-import net.dungeonhub.promptoverlay.overlays.TwoOptionsSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.PartyCommandOverlay
-import net.dungeonhub.promptoverlay.overlays.PartyInviteOverlay
-import net.dungeonhub.promptoverlay.overlays.SafariMilestoneReminderOverlay
-import net.dungeonhub.promptoverlay.overlays.SingleOptionSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.SkyblockTradeOverlay
-import net.dungeonhub.promptoverlay.overlays.StarlynSisterRewardsOverlay
-import net.dungeonhub.promptoverlay.overlays.StatDiscoveryOverlay
-import net.dungeonhub.promptoverlay.overlays.ThreeOptionsSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.TimberNotificationOverlay
-import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
-import net.dungeonhub.promptoverlay.overlays.TrapperRestartOverlay
-import net.dungeonhub.promptoverlay.overlays.TreeGiftMilestoneOverlay
-import net.dungeonhub.promptoverlay.overlays.TrophyFishGgOverlay
+import net.dungeonhub.promptoverlay.overlays.*
 import net.dungeonhub.promptoverlay.overlays.cubecraft.CubeCraftPartyInviteOverlay
 import net.dungeonhub.promptoverlay.util.MessageUtil.sendInfo
 import net.minecraft.ChatFormatting
@@ -332,6 +308,9 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
     companion object {
         private val logger = LoggerFactory.getLogger(ChatRegex::class.java)
+        private val formattingByName = ChatFormatting.entries.associateBy {
+            sanitizeColorName(it.name)
+        }
 
         val floorPattern = Regex("Floor (I{1,3}|IV|VI{0,2})$")
         val abiphoneCallerPattern = Regex("✆ (.+) (§e)?✆")
@@ -484,9 +463,21 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         private fun formatMessageWithColor(component: Component): String {
             val color = component.style.color?.serialize()
-            val legacyFormatting = ChatFormatting.getByName(color)
+            val legacyFormatting = getByName(color)
 
             return (legacyFormatting?.toString() ?: "") + component.string
+        }
+
+        private fun sanitizeColorName(color: String): String {
+            return color.lowercase().replace("[^a-z]".toRegex(), "")
+        }
+
+        private fun getByName(color: String?): ChatFormatting? {
+            if(color == null) return null
+
+            val sanitized = sanitizeColorName(color)
+
+            return formattingByName[sanitized]
         }
     }
 }

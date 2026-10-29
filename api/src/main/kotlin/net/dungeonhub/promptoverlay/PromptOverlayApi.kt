@@ -62,7 +62,7 @@ object PromptOverlayApi {
         logger.error("An error occurred while a mod tried to queue an overlay.", throwable)
 
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().gui.chat.addClientSystemMessage(
+            Minecraft.getInstance().gui.hud.chat.addClientSystemMessage(
                 Component.literal(
                     "An error occurred while a mod tried to set an overlay. Please make sure that your mods are on their latest version."
                 ).withStyle(ChatFormatting.RED)

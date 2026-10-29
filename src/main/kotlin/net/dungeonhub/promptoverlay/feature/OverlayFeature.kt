@@ -100,7 +100,7 @@ object OverlayFeature {
 
         val minecraft = Minecraft.getInstance()
 
-        if (minecraft.options.hideGui) return
+        if (minecraft.gui.hud.isHidden) return
 
         val window = minecraft.window
         val screenWidth = window.guiScaledWidth
