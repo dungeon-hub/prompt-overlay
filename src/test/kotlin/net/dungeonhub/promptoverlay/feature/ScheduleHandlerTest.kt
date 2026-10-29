@@ -50,4 +50,44 @@ class ScheduleHandlerTest {
             ScheduleHandler.nextTravelingZoo(Instant.parse("2026-08-22T06:55:00Z")),
         )
     }
+
+    @Test
+    fun `next starfall meeting uses the first known start before the schedule begins`() {
+        assertEquals(
+            Instant.parse("2019-06-11T19:55:00Z"),
+            ScheduleHandler.nextStarfallMeeting(Instant.parse("2019-06-01T00:00:00Z")),
+        )
+    }
+
+    @Test
+    fun `starfall meetings happen every 140 minutes within a month`() {
+        assertEquals(
+            Instant.parse("2020-08-15T11:35:00Z"),
+            ScheduleHandler.nextStarfallMeeting(Instant.parse("2020-08-15T09:16:00Z")),
+        )
+        assertEquals(
+            Instant.parse("2020-08-15T16:15:00Z"),
+            ScheduleHandler.nextStarfallMeeting(Instant.parse("2020-08-15T16:14:00Z")),
+        )
+    }
+
+    @Test
+    fun `a starfall meeting starting now returns the following meeting`() {
+        assertEquals(
+            Instant.parse("2020-08-15T11:35:00Z"),
+            ScheduleHandler.nextStarfallMeeting(Instant.parse("2020-08-15T09:15:00Z")),
+        )
+    }
+
+    @Test
+    fun `the last starfall meeting of a month wraps to the first meeting of the next month`() {
+        assertEquals(
+            Instant.parse("2020-08-15T19:35:00Z"),
+            ScheduleHandler.nextStarfallMeeting(Instant.parse("2020-08-15T16:15:00Z")),
+        )
+        assertEquals(
+            Instant.parse("2020-08-15T19:35:00Z"),
+            ScheduleHandler.nextStarfallMeeting(Instant.parse("2020-08-15T19:34:59.999999999Z")),
+        )
+    }
 }
