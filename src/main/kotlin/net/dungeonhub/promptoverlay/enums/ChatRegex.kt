@@ -17,6 +17,7 @@ import net.dungeonhub.promptoverlay.overlays.FiveOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.FourOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
 import net.dungeonhub.promptoverlay.overlays.GuildRequestOverlay
+import net.dungeonhub.promptoverlay.overlays.NewObjectiveOverlay
 import net.dungeonhub.promptoverlay.overlays.TwoOptionsSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.PartyCommandOverlay
 import net.dungeonhub.promptoverlay.overlays.PartyInviteOverlay
@@ -24,9 +25,12 @@ import net.dungeonhub.promptoverlay.overlays.SafariMilestoneReminderOverlay
 import net.dungeonhub.promptoverlay.overlays.SingleOptionSelectOverlay
 import net.dungeonhub.promptoverlay.overlays.SkyblockTradeOverlay
 import net.dungeonhub.promptoverlay.overlays.StarlynSisterRewardsOverlay
+import net.dungeonhub.promptoverlay.overlays.StatDiscoveryOverlay
 import net.dungeonhub.promptoverlay.overlays.ThreeOptionsSelectOverlay
+import net.dungeonhub.promptoverlay.overlays.TimberNotificationOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
 import net.dungeonhub.promptoverlay.overlays.TrapperRestartOverlay
+import net.dungeonhub.promptoverlay.overlays.TreeGiftMilestoneOverlay
 import net.dungeonhub.promptoverlay.overlays.TrophyFishGgOverlay
 import net.dungeonhub.promptoverlay.overlays.cubecraft.CubeCraftPartyInviteOverlay
 import net.dungeonhub.promptoverlay.util.MessageUtil.sendInfo
@@ -103,7 +107,11 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 else result.append(Component.literal("\n")).append(task)
             }
 
-            OverlayFeature.setOverlay(AreaDiscoveryOverlay(title, taskList))
+            if(areaTasks.isEmpty() || taskList.string.trim().isEmpty()) {
+                OverlayFeature.setOverlay(AreaDiscoveryOverlay(areaDiscoveryMessage, areaName))
+            } else {
+                OverlayFeature.setOverlay(AreaDiscoveryOverlay(title, taskList))
+            }
         }
     }),
     CatacombsRequeue(Regex("Click §e§lHERE §7to re-queue into (§c§lMM§c |§c§a)The Catacombs"), FeaturesToggle::catacombsRequeue, action=action@{ message, _ ->
@@ -155,6 +163,12 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val guildName = extractGuildName(message)
 
         OverlayFeature.setOverlay(GuildRequestOverlay(inviter, guildName))
+    }),
+    NewObjective(Regex("NEW OBJECTIVE"), FeaturesToggle::newObjective, action=action@{ message, _ ->
+        ChatHandler.waitForMessages(1) action@{ messages ->
+            val objective = messages.firstOrNull() ?: return@action
+            OverlayFeature.setOverlay(NewObjectiveOverlay(message, objective))
+        }
     }),
     OptionSelect(Regex("Select an option: "), FeaturesToggle::npcOptionSelection, action=action@{ message, _ ->
         val optionComponent = findComponent(message) { ChatFormatting.stripFormatting(((it as? MutableComponent)?.contents as? PlainTextContents.LiteralContents)?.text)?.trim() == "Select an option:" } ?: return@action
@@ -273,6 +287,15 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         OverlayFeature.setOverlay(StarlynSisterRewardsOverlay())
     }),
+    StatDiscovery(Regex("^NEW STAT DISCOVERED! "), FeaturesToggle::statDiscovery, action=action@{ message, _ ->
+        ChatHandler.waitForMessages(2) action@{ messages ->
+            val statExplanation = messages.lastOrNull() ?: return@action
+            OverlayFeature.setOverlay(StatDiscoveryOverlay(message, statExplanation))
+        }
+    }),
+    TimberNotification(Regex("TIMBER! You felled the entire"), FeaturesToggle::timberNotification, action=action@{ message, _ ->
+        OverlayFeature.setOverlay(TimberNotificationOverlay(message))
+    }),
     TrapperHunt(Regex("Accept the trapper's task to hunt the animal?"), FeaturesToggle::trapperHunt, action=action@{ message, _ ->
         lastTrapperQuest = Clock.System.now()
 
@@ -289,6 +312,21 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
             OverlayFeature.setOverlay(TrapperRestartOverlay())
         }
+    }),
+    TreeGiftMilestone(Regex("§eClick to claim rewards!"), FeaturesToggle::treeGiftMilestone, action=action@{ message, _ ->
+        val command = findClickCommand(message) { it.startsWith("/treegifts ") } ?: return@action
+
+        val treeGiftMessage = ChatHandler.getLastMessages(10).firstOrNull {
+            it.string.trim().startsWith("TREE GIFTS MILESTONE")
+        } ?: return@action
+
+        val strippedMessage = MutableComponent.create(treeGiftMessage.contents)
+        treeGiftMessage.siblings.filter { it.string.trim() != "TREE GIFTS MILESTONE" }.forEach {
+            strippedMessage.append(it)
+        }
+        strippedMessage.style = treeGiftMessage.style
+
+        OverlayFeature.setOverlay(TreeGiftMilestoneOverlay(strippedMessage, command))
     }),
     TrophyFishGg(Regex("§6§lCLICK HERE §eto say §6gg§e!"), FeaturesToggle::trophyFishGg, action={ _, _ -> OverlayFeature.setOverlay(TrophyFishGgOverlay()) });
 

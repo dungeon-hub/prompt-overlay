@@ -41,6 +41,10 @@ object FeaturesToggle : ObjectKt() {
         name = Literal("Guild Invite")
     }
 
+    val newObjective by boolean("show_new_objective", true) {
+        name = Literal("New Objective")
+    }
+
     val npcOptionSelection by boolean("show_option_selects", true) {
         name = Literal("NPC Dialog Options")
         description = Literal("This currently only supports up to 2 options, so don't freak out if some dialogs aren't getting recognized")
@@ -72,6 +76,15 @@ object FeaturesToggle : ObjectKt() {
         description = Literal("Shows you a reminder when the Starfall Meeting takes place.")
     }
 
+    val statDiscovery by boolean("show_stat_discovery", true) {
+        name = Literal("Stat Discovery")
+    }
+
+    val timberNotification by boolean("show_timber_notification", true) {
+        name = Literal("Timber Notification")
+        description = Literal("Shows a notification when your Timber stat triggers, since the small chat message is quite easy to miss.")
+    }
+
     val trapperHunt by boolean("show_trapper_hunt", true) {
         name = Literal("Trapper Hunt")
         description = Literal("Gives you a prompt to call Trevor after another hunt task is available. Note: Requires you to have an active Cookie Buff.")
@@ -80,6 +93,10 @@ object FeaturesToggle : ObjectKt() {
     val travelingZoo by boolean("show_traveling_zoo_warp", true) {
         name = Literal("Traveling Zoo")
         description = Literal("Show the Traveling Zoo Warp reminder.")
+    }
+
+    val treeGiftMilestone by boolean("show_tree_gift_milestone", true) {
+        name = Literal("Tree Gift Milestone")
     }
 
     val trophyFishGg by boolean("show_trophy_fish_gg", true) {
