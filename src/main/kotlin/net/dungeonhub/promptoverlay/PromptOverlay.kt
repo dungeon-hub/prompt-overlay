@@ -10,11 +10,14 @@ import net.dungeonhub.promptoverlay.feature.OverlayFeature
 import net.dungeonhub.promptoverlay.feature.ScheduleHandler
 import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
 import net.dungeonhub.promptoverlay.service.KeyMappingService
+import net.dungeonhub.promptoverlay.util.GameUtil
+import net.dungeonhub.promptoverlay.util.MessageUtil.sendMessage
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.ClientCommands
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.Component
 
 object PromptOverlay : ClientModInitializer, OverlayHandler {
     const val MOD_ID = "prompt-overlay"
@@ -48,6 +51,12 @@ object PromptOverlay : ClientModInitializer, OverlayHandler {
                                         }
                                         override fun deny() {}
                                     })
+                                    return@executes 1
+                                }
+                            )
+                            .then(
+                                ClientCommands.literal("hostname").executes {
+                                    Minecraft.getInstance().sendMessage(Component.literal("The current hostname is: ${GameUtil.getCurrentHostname()} (${GameUtil.getCurrentServer()})"))
                                     return@executes 1
                                 }
                             )

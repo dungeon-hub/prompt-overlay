@@ -30,6 +30,13 @@ object FeaturesCategory : CategoryKt("features") {
         slider = true
     }
 
+    val starfallMeetingTime by int("starfall_meeting_notification_time", 15) {
+        name = Literal("Starfall Meeting Notification time")
+        description = Literal("Change how many seconds before the Starfall meeting you'll want to be notified.")
+        range = 5..150
+        slider = true
+    }
+
     val travelingZooTime by int("traveling_zoo_notification_time", 20) {
         name = Literal("Traveling Zoo Notification time")
         description = Literal("Change how many seconds before the traveling zoo you'll want to be notified.")
