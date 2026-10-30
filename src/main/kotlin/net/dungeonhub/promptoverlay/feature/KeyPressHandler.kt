@@ -43,6 +43,7 @@ object KeyPressHandler {
             overlay.action()
         } catch (exception: Exception) {
             logger.error("Prompt action failed for prompt {}", entry.id, exception)
+            OverlayFeature.markActionFailed(entry)
         }
         return true
     }

@@ -124,3 +124,35 @@ PromptOverlayApi.setOverlay(InformationOverlay())
 ```
 
 The `dismiss` implementation is optional. Prompt Overlay removes the overlay after the configured dismiss key is pressed regardless of whether the callback is overridden.
+
+## Cancel prompts and receive outcomes
+
+Use `submit` instead of `setOverlay` when the calling mod needs to know how a prompt ended, or needs to remove it again, for example because the server withdrew a request:
+
+```kotlin
+import net.dungeonhub.promptoverlay.api.PromptOutcome
+
+val handle = PromptOverlayApi.submit(TradeRequestOverlay()) { outcome ->
+    if (outcome == PromptOutcome.TIMED_OUT) {
+        // The user did not react in time.
+    }
+}
+
+if (handle == null) {
+    // Prompt Overlay is not installed or the prompt could not be queued. Use the normal fallback.
+}
+
+// Later, when the trade request is no longer valid:
+handle?.cancel()
+```
+
+`submit` returns `null` in the same situations in which `setOverlay` returns `ModNotInstalled` or `Error`. Otherwise, the listener is called exactly once, on the Minecraft client thread, with one of these outcomes:
+
+- `ACCEPTED`: the user accepted the prompt or selected one of its options.
+- `DENIED`: the user denied the prompt.
+- `DISMISSED`: the user dismissed the prompt.
+- `TIMED_OUT`: the display duration ran out. A queued prompt whose duration ran out is reported when it would have been shown.
+- `CANCELED`: the prompt was canceled through `handle.cancel()`. No overlay callback such as `dismiss` is invoked.
+- `ACTION_FAILED`: the overlay callback for the chosen action threw an exception.
+
+`handle.isActive` is `true` while the prompt is queued or visible. `handle.cancel()` returns `false` if the prompt was already removed.

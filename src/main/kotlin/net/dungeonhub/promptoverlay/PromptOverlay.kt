@@ -3,6 +3,7 @@ package net.dungeonhub.promptoverlay
 import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigScreen
 import com.teamresourceful.resourcefulconfig.api.loader.Configurator
 import net.dungeonhub.promptoverlay.api.OverlayHandler
+import net.dungeonhub.promptoverlay.api.PromptListener
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.Config
 import net.dungeonhub.promptoverlay.feature.ChatHandler
@@ -78,4 +79,5 @@ object PromptOverlay : ClientModInitializer, OverlayHandler {
     }
 
     override fun setOverlay(overlay: Overlay) = OverlayFeature.setOverlay(overlay)
+    override fun submit(overlay: Overlay, listener: PromptListener?) = OverlayFeature.submit(overlay, listener)
 }

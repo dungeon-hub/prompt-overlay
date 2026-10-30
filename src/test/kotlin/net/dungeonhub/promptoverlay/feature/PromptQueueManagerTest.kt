@@ -11,6 +11,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
+import net.dungeonhub.promptoverlay.api.PromptOutcome
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.minecraft.client.gui.Font
@@ -159,10 +160,128 @@ class PromptQueueManagerTest {
         assertNull(failure.get())
     }
 
+    @Test
+    fun `outcome is reported once the exit completes`() {
+        val fixture = Fixture()
+        fixture.manager.enqueue(TestOverlay("A"))
+        val a = fixture.manager.currentPrompt()!!
+
+        fixture.manager.removePrompt(a.id, RemoveType.Deny)
+        assertTrue(fixture.resolved.isEmpty())
+
+        fixture.manager.completeExit(a.id)
+        assertEquals(listOf("A" to PromptOutcome.DENIED), fixture.resolved)
+    }
+
+    @Test
+    fun `explicit outcome overrides the remove type`() {
+        val fixture = Fixture()
+        fixture.manager.enqueue(TestOverlay("A"))
+        val a = fixture.manager.currentPrompt()!!
+
+        fixture.manager.removePrompt(a.id, RemoveType.Dismiss, PromptOutcome.TIMED_OUT)
+        fixture.manager.completeExit(a.id)
+
+        assertEquals(listOf("A" to PromptOutcome.TIMED_OUT), fixture.resolved)
+    }
+
+    @Test
+    fun `failed action overrides the outcome`() {
+        val fixture = Fixture()
+        fixture.manager.enqueue(TestOverlay("A"))
+        val a = fixture.manager.currentPrompt()!!
+
+        fixture.manager.removePrompt(a.id, RemoveType.Accept)
+        fixture.manager.markActionFailed(a.id)
+        fixture.manager.completeExit(a.id)
+
+        assertEquals(listOf("A" to PromptOutcome.ACTION_FAILED), fixture.resolved)
+    }
+
+    @Test
+    fun `canceling a queued prompt removes it without showing it`() {
+        val fixture = Fixture()
+        fixture.manager.enqueue(TestOverlay("A"))
+        val b = fixture.manager.enqueue(TestOverlay("B"))
+
+        assertTrue(fixture.manager.isActive(b.id))
+        assertTrue(fixture.manager.cancel(b.id))
+        assertFalse(fixture.manager.isActive(b.id))
+        assertFalse(fixture.manager.cancel(b.id))
+
+        assertEquals(listOf("B" to PromptOutcome.CANCELED), fixture.resolved)
+        assertEquals(0, fixture.manager.waitingCount())
+        assertEquals(listOf("A"), fixture.shown.map { it.overlay.message.string })
+    }
+
+    @Test
+    fun `canceling the visible prompt animates it out`() {
+        val fixture = Fixture()
+        val a = fixture.manager.enqueue(TestOverlay("A"))
+        fixture.manager.enqueue(TestOverlay("B"))
+
+        assertTrue(fixture.manager.cancel(a.id))
+        assertFalse(fixture.manager.isActive(a.id))
+        assertFalse(fixture.manager.cancel(a.id))
+        assertEquals(listOf(a), fixture.exits)
+
+        fixture.manager.completeExit(a.id)
+        assertEquals(listOf("A" to PromptOutcome.CANCELED), fixture.resolved)
+        assertEquals("B", fixture.manager.currentPrompt()?.overlay?.message?.string)
+    }
+
+    @Test
+    fun `expired queued prompts are reported as timed out`() {
+        val resolved = mutableListOf<Pair<String, PromptOutcome>>()
+        val expired = TestOverlay("expired")
+        val manager = PromptQueueManager(
+            onShow = {},
+            onExit = { _, _ -> },
+            isExpired = { it.overlay === expired },
+            onResolved = { entry, outcome -> resolved.add(entry.overlay.message.string to outcome) },
+        )
+        val current = manager.enqueue(TestOverlay("current"))
+        manager.enqueue(expired)
+
+        manager.removePrompt(current.id, RemoveType.Accept)
+        manager.completeExit(current.id)
+
+        assertEquals(
+            listOf("current" to PromptOutcome.ACCEPTED, "expired" to PromptOutcome.TIMED_OUT),
+            resolved,
+        )
+    }
+
+    @Test
+    fun `prompt enqueued by a listener waits behind already queued prompts`() {
+        lateinit var manager: PromptQueueManager
+        val shown = mutableListOf<String>()
+        manager = PromptQueueManager(
+            onShow = { shown.add(it.overlay.message.string) },
+            onExit = { _, _ -> },
+            onResolved = { entry, _ ->
+                if (entry.overlay.message.string == "A") manager.enqueue(TestOverlay("follow-up"))
+            },
+        )
+        val a = manager.enqueue(TestOverlay("A"))
+        manager.enqueue(TestOverlay("B"))
+
+        manager.removePrompt(a.id, RemoveType.Accept)
+        manager.completeExit(a.id)
+
+        assertEquals(listOf("A", "B"), shown)
+        assertEquals(1, manager.waitingCount())
+    }
+
     private class Fixture {
         val shown = mutableListOf<PromptEntry>()
         val exits = mutableListOf<PromptEntry>()
-        val manager = PromptQueueManager(shown::add, { entry, _ -> exits.add(entry) })
+        val resolved = mutableListOf<Pair<String, PromptOutcome>>()
+        val manager = PromptQueueManager(
+            shown::add,
+            { entry, _ -> exits.add(entry) },
+            onResolved = { entry, outcome -> resolved.add(entry.overlay.message.string to outcome) },
+        )
     }
 
     private class TestOverlay(
