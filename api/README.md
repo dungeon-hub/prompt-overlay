@@ -130,6 +130,8 @@ The `dismiss` implementation is optional. Prompt Overlay removes the overlay aft
 Use `submit` instead of `setOverlay` when the calling mod needs to know how a prompt ended, or needs to remove it again, for example because the server withdrew a request:
 
 ```kotlin
+import net.dungeonhub.promptoverlay.api.PromptOutcome
+
 val handle = PromptOverlayApi.submit(TradeRequestOverlay()) { outcome ->
     if (outcome == PromptOutcome.TIMED_OUT) {
         // The user did not react in time.
