@@ -16,18 +16,29 @@ import net.dungeonhub.promptoverlay.enums.RemoveType
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.client.renderer.RenderPipelines
+        import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.FormattedText
+import net.minecraft.network.chat.MutableComponent
+import net.minecraft.network.chat.Style
 import net.minecraft.resources.Identifier
 import net.minecraft.util.FormattedCharSequence
+import java.util.Optional
+import kotlin.concurrent.Volatile
 
 object OverlayRenderer {
+    @Volatile
     internal var animationStartTime: Instant = Instant.DISTANT_PAST
         private set
+    @Volatile
     internal var autoDismissStartTime: Instant = Instant.DISTANT_PAST
         private set
+    @Volatile
     internal var isAnimatingIn: Boolean = false
         private set
+    @Volatile
     internal var isAnimatingOut: Boolean = false
         private set
+    @Volatile
     internal var animationOutType: RemoveType? = null
         private set
 
@@ -35,12 +46,14 @@ object OverlayRenderer {
 
     private const val PADDING = 6
     private const val MIN_WIDTH = 150
-    private const val MAX_WIDTH = 400
+    const val MAX_WIDTH = 400
     private const val MAX_BADGE_COUNT = 99
     private const val BADGE_OUTLINE_COLOR = 0xB0000000.toInt()
     private const val BADGE_BACKGROUND_COLOR = 0xFFE53935.toInt()
     private const val BADGE_TEXT_SHADOW_COLOR = 0xC0000000.toInt()
     private const val BADGE_TEXT_COLOR = 0xFFFFFFFF.toInt()
+
+    private val isJune by lazy { LocalDate.now().month == Month.JUNE }
 
     private val customBackground =
         Identifier.fromNamespaceAndPath(MOD_ID, "textures/gui/prompt-background.png")
@@ -161,7 +174,7 @@ object OverlayRenderer {
         val separatorWidth = boxWidth - PADDING * 2
 
         val clampedDismissProgress = dismissProgress.coerceIn(0.0, 1.0)
-        val pride = LocalDate.now().month == Month.JUNE || OverlayCategory.alwaysPrideMonth
+        val pride = OverlayCategory.alwaysPrideMonth || isJune
 
         if (wrapProgress) {
             drawWrappedProgress(graphics, style, x, y, boxWidth, totalHeight, cornerRadius, borderThickness, clampedDismissProgress, borderColor, pride)
@@ -501,5 +514,33 @@ object OverlayRenderer {
 
     private fun lerp(a: Int, b: Int, t: Float): Int {
         return (a + (b - a) * t).toInt()
+    }
+
+    /**
+     * Converts the specified [FormattedText] into a [Component] while
+     * preserving the formatting of every part of the formatted text.
+     *
+     *
+     * The formatted text is visited using [FormattedText.visit] and each
+     * visited fragment is converted into a literal component with its associated
+     * [Style]. This preserves formatting such as colors, bold, italic,
+     * underlining, click events, hover events, fonts, and other style properties.
+     *
+     * @param text the formatted text to convert
+     * @return a [Component] containing the same text and formatting
+     * @throws NullPointerException if `text` is `null`
+     */
+    fun toComponent(text: FormattedText): Component {
+        val component: MutableComponent = Component.empty()
+
+        text.visit({ style, string ->
+            component.append(
+                Component.literal(string)
+                    .withStyle(style)
+            )
+            Optional.empty()
+        }, Style.EMPTY)
+
+        return component
     }
 }

@@ -7,6 +7,10 @@ object FeaturesToggle : ObjectKt() {
         name = Literal("Abiphone Calls")
     }
 
+    val areaDiscovery by boolean("area_discovery", true) {
+        name = Literal("Area Discovery")
+    }
+
     val catacombsRequeue by boolean("show_catacombs_requeue", true) {
         name = Literal("Catacombs Requeue")
     }
@@ -16,8 +20,17 @@ object FeaturesToggle : ObjectKt() {
         description = Literal("Show the Dark Auction Warp reminder.")
     }
 
+    val dismissableNotification by boolean("show_dismissable_notification", true) {
+        name = Literal("Dismissable Notification")
+        description = Literal("Show a prompt for dismissable notifications, such as tutorial messages teaching you about the game mechanics.")
+    }
+
     val duelInvite by boolean("show_duel_invite", true) {
         name = Literal("Duel Invite")
+    }
+
+    val eventRewards by boolean("show_event_rewards", true) {
+        name = Literal("Event Rewards")
     }
 
     val friendRequest by boolean("show_friend_request", true) {
@@ -26,6 +39,10 @@ object FeaturesToggle : ObjectKt() {
 
     val guildInvite by boolean("show_guild_invite", true) {
         name = Literal("Guild Invite")
+    }
+
+    val newObjective by boolean("show_new_objective", true) {
+        name = Literal("New Objective")
     }
 
     val npcOptionSelection by boolean("show_option_selects", true) {
@@ -42,12 +59,30 @@ object FeaturesToggle : ObjectKt() {
         name = Literal("Party Invites")
     }
 
+    val safariMilestoneReminder by boolean("show_safari_milestone_reminder", true) {
+        name = Literal("Unclaimed Safari Milestone Reminder")
+    }
+
     val skyblockTrade by boolean("show_skyblock_trade", true) {
         name = Literal("Skyblock Trade Request")
     }
 
     val starlynSisterRewards by boolean("show_starlyn_sister_rewards", true) {
         name = Literal("Starlyn Sister Rewards")
+    }
+
+    val starfallMeetingReminder by boolean("show_starfall_meeting_reminder", false) {
+        name = Literal("Starfall Meeting Reminder")
+        description = Literal("Shows you a reminder when the Starfall Meeting takes place.")
+    }
+
+    val statDiscovery by boolean("show_stat_discovery", true) {
+        name = Literal("Stat Discovery")
+    }
+
+    val timberNotification by boolean("show_timber_notification", true) {
+        name = Literal("Timber Notification")
+        description = Literal("Shows a notification when your Timber stat triggers, since the small chat message is quite easy to miss.")
     }
 
     val trapperHunt by boolean("show_trapper_hunt", true) {
@@ -58,6 +93,10 @@ object FeaturesToggle : ObjectKt() {
     val travelingZoo by boolean("show_traveling_zoo_warp", true) {
         name = Literal("Traveling Zoo")
         description = Literal("Show the Traveling Zoo Warp reminder.")
+    }
+
+    val treeGiftMilestone by boolean("show_tree_gift_milestone", true) {
+        name = Literal("Tree Gift Milestone")
     }
 
     val trophyFishGg by boolean("show_trophy_fish_gg", true) {

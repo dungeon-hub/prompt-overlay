@@ -6,14 +6,16 @@ import net.dungeonhub.promptoverlay.api.render.TwoActionsOverlay
 import net.dungeonhub.promptoverlay.api.render.TwoOptionsOverlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket
 import java.awt.Color
 
 class TwoOptionsSelectOverlay(
     val firstOption: String,
-    val firstCommand: String,
+    val firstAction: ClickEvent.Custom,
     val secondOption: String,
-    val secondCommand: String,
+    val secondAction: ClickEvent.Custom,
     messageOverride: String? = null
 ): AcceptableOverlay, DeniableOverlay, TwoActionsOverlay, TwoOptionsOverlay {
     override val borderColor: Color = Color(OverlayCategory.optionSelectColor)
@@ -21,7 +23,7 @@ class TwoOptionsSelectOverlay(
 
     override fun firstOption() {
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand(firstCommand)
+            Minecraft.getInstance().player?.connection?.send(ServerboundCustomClickActionPacket(firstAction.id(), firstAction.payload()))
         }
     }
 
@@ -33,7 +35,7 @@ class TwoOptionsSelectOverlay(
 
     override fun secondOption() {
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.sendCommand(secondCommand)
+            Minecraft.getInstance().player?.connection?.send(ServerboundCustomClickActionPacket(secondAction.id(), secondAction.payload()))
         }
     }
 

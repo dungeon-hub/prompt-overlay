@@ -69,30 +69,46 @@ class PromptQueueManagerTest {
     }
 
     @Test
-    fun `queued prompt timeout does not expire the current prompt`() {
+    fun `removePrompt rejects a non-current queued entry`() {
         val fixture = Fixture()
         val first = TestOverlay("A")
-        val second = TestOverlay("B", maxDisplayDuration = 30.seconds)
 
-        // The global prompt length is 60 seconds. Ten seconds after the first
-        // prompt is shown, a prompt with its own 30-second limit is queued.
         fixture.manager.enqueue(first)
         val firstId = fixture.manager.currentPrompt()!!.id
-        fixture.manager.enqueue(second)
-        val secondId = java.util.UUID.randomUUID()
+        fixture.manager.enqueue(TestOverlay("B"))
+        val secondId = firstId + 1
 
-        // At t=40s the queued prompt's timeout must not dismiss the first prompt.
         assertFalse(fixture.manager.removePrompt(secondId, RemoveType.Dismiss))
         assertSame(first, fixture.manager.currentPrompt()?.overlay)
-
-        // At t=60s the first prompt's global timeout expires it normally.
-        assertTrue(fixture.manager.removePrompt(firstId, RemoveType.Dismiss))
-        assertNull(fixture.manager.currentPrompt())
-        assertSame(first, fixture.manager.outgoingPrompt()?.overlay)
+        assertNull(fixture.manager.outgoingPrompt())
+        assertEquals(1, fixture.manager.waitingCount())
     }
 
     @Test
-    fun `action claim prevents recursive resolution while callback enqueues`() {
+    fun `expired queued entries are skipped without being shown`() {
+        val shown = mutableListOf<PromptEntry>()
+        val expired = TestOverlay("expired")
+        val valid = TestOverlay("valid")
+        val manager = PromptQueueManager(
+            onShow = shown::add,
+            onExit = { _, _ -> },
+            isExpired = { it.overlay === expired },
+        )
+        manager.enqueue(TestOverlay("current"))
+        manager.enqueue(expired)
+        manager.enqueue(valid)
+        val currentId = manager.currentPrompt()!!.id
+
+        manager.removePrompt(currentId, RemoveType.Dismiss)
+        manager.completeExit(currentId)
+
+        assertSame(valid, manager.currentPrompt()?.overlay)
+        assertEquals(listOf("current", "valid"), shown.map { it.overlay.message.string })
+        assertEquals(0, manager.waitingCount())
+    }
+
+    @Test
+    fun `repeated removal of an already-resolved prompt is rejected`() {
         val fixture = Fixture()
         fixture.manager.enqueue(TestOverlay("A"))
         val a = fixture.manager.currentPrompt()!!
@@ -108,7 +124,7 @@ class PromptQueueManagerTest {
         val failure = AtomicReference<Throwable?>()
         lateinit var enqueueThread: Thread
         lateinit var manager: PromptQueueManager
-        manager = PromptQueueManager({}, { _, _ -> }) {
+        manager = PromptQueueManager({}, { _, _ -> }, onExitComplete = {
             enqueueThread = Thread {
                 enqueueStarted.countDown()
                 try {
@@ -119,7 +135,12 @@ class PromptQueueManagerTest {
             }
             enqueueThread.start()
             enqueueStarted.await()
-        }
+            val deadline = System.nanoTime() + 5.seconds.inWholeNanoseconds
+            while (enqueueThread.state != Thread.State.BLOCKED && System.nanoTime() < deadline) {
+                Thread.yield()
+            }
+            assertEquals(Thread.State.BLOCKED, enqueueThread.state)
+        })
         manager.enqueue(TestOverlay("A"))
         val b = TestOverlay("B")
         manager.enqueue(b)

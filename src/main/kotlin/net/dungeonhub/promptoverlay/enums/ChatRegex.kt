@@ -7,32 +7,19 @@ import net.dungeonhub.promptoverlay.config.categories.FeaturesToggle
 import net.dungeonhub.promptoverlay.feature.ChatHandler
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
 import net.dungeonhub.promptoverlay.feature.ScheduleHandler
-import net.dungeonhub.promptoverlay.overlays.AbiphoneCallOverlay
-import net.dungeonhub.promptoverlay.overlays.CatacombsRequeueOverlay
-import net.dungeonhub.promptoverlay.overlays.DuelInviteOverlay
-import net.dungeonhub.promptoverlay.overlays.FiveOptionsSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.FourOptionsSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.FriendRequestOverlay
-import net.dungeonhub.promptoverlay.overlays.GuildRequestOverlay
-import net.dungeonhub.promptoverlay.overlays.TwoOptionsSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.PartyCommandOverlay
-import net.dungeonhub.promptoverlay.overlays.PartyInviteOverlay
-import net.dungeonhub.promptoverlay.overlays.SingleOptionSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.SkyblockTradeOverlay
-import net.dungeonhub.promptoverlay.overlays.StarlynSisterRewardsOverlay
-import net.dungeonhub.promptoverlay.overlays.ThreeOptionsSelectOverlay
-import net.dungeonhub.promptoverlay.overlays.TrapperHuntOverlay
-import net.dungeonhub.promptoverlay.overlays.TrapperRestartOverlay
-import net.dungeonhub.promptoverlay.overlays.TrophyFishGgOverlay
-import net.dungeonhub.promptoverlay.util.MessageUtil.sendDebug
+import net.dungeonhub.promptoverlay.overlays.*
+import net.dungeonhub.promptoverlay.overlays.cubecraft.CubeCraftPartyInviteOverlay
+import net.dungeonhub.promptoverlay.util.MessageUtil.sendInfo
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.MutableComponent
 import net.minecraft.network.chat.contents.PlainTextContents
+import net.minecraft.resources.Identifier
 import org.slf4j.LoggerFactory
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
@@ -53,16 +40,92 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
             OverlayFeature.setOverlay(AbiphoneCallOverlay(caller, command))
         }
     }),
+    AreaDiscovery(Regex("^ ?NEW AREA DISCOVERED!"), FeaturesToggle::areaDiscovery, action={ _, _ ->
+        ScheduleHandler.scheduler.launch {
+            delay(10.milliseconds)
+
+            val latestMessages = ChatHandler.getLastMessages(25, false)
+
+            val areaDiscoveryIndex = latestMessages.indexOfFirst {
+                it.string.trim() == "NEW AREA DISCOVERED!"
+            }
+
+            if(areaDiscoveryIndex == -1) {
+                logger.sendInfo("Didn't find an Area Discovery Message, skipping this area")
+                return@launch
+            }
+
+            val messages = latestMessages.subList(0, areaDiscoveryIndex + 1).dropWhile {
+                it.string.trim() != "NEW AREA DISCOVERED!" &&
+                        !it.string.trim().startsWith("■") &&
+                        !it.string.trim().startsWith("\uE067")
+            }.takeWhile {
+                it.string.trim() == "NEW AREA DISCOVERED!" ||
+                        it.string.trim().isEmpty() ||
+                        it.string.trim().startsWith("■") ||
+                        it.string.trim().startsWith("\uE067")
+            }.filter {
+                it.string.trim().isNotEmpty()
+            }
+
+            if(messages.size < 2) {
+                logger.sendInfo("Read not enough messages, only ${messages.size}/2")
+                return@launch
+            }
+
+            val areaDiscoveryMessage = messages[messages.size - 1]
+            val areaName = messages[messages.size - 2]
+            val areaTasks = messages.reversed().drop(2)
+            val title = Component.empty().append(areaDiscoveryMessage).append(areaName)
+
+            val taskList = areaTasks.fold(Component.empty()) { result, task ->
+                if (result == Component.empty()) result.append(task)
+                else result.append(Component.literal("\n")).append(task)
+            }
+
+            if(areaTasks.isEmpty() || taskList.string.trim().isEmpty()) {
+                OverlayFeature.setOverlay(AreaDiscoveryOverlay(areaDiscoveryMessage, areaName))
+            } else {
+                OverlayFeature.setOverlay(AreaDiscoveryOverlay(title, taskList))
+            }
+        }
+    }),
     CatacombsRequeue(Regex("Click §e§lHERE §7to re-queue into (§c§lMM§c |§c§a)The Catacombs"), FeaturesToggle::catacombsRequeue, action=action@{ message, _ ->
-        val info = extractCatacombsInfo(message) ?: return@action
-        val (type, floor) = info
+        val (type, floor) = extractCatacombsInfo(message) ?: return@action
+
         OverlayFeature.setOverlay(CatacombsRequeueOverlay("$type $floor"))
+    }),
+    CubeCraftCommands(Regex("ACCEPT \\| DENY"), action=action@{ message, _ ->
+        val acceptComponent = findComponent(message) { it.string == "ACCEPT" && (it.style.clickEvent as? ClickEvent.RunCommand)?.command?.startsWith("/") ?: false } ?: return@action
+        val acceptCommand = (acceptComponent.style.clickEvent as? ClickEvent.RunCommand)?.command ?: return@action
+
+        if(acceptCommand.startsWith("/friend accept ") && FeaturesToggle.friendRequest) {
+            val player = acceptCommand.removePrefix("/friend accept ")
+
+            OverlayFeature.setOverlay(FriendRequestOverlay(player))
+        }
+
+        if(acceptCommand.startsWith("/party accept") && FeaturesToggle.partyInvites) {
+            val player = acceptCommand.removePrefix("/party accept ")
+
+            OverlayFeature.setOverlay(CubeCraftPartyInviteOverlay(player))
+        }
+    }),
+    DismissableNotification(Regex(""), FeaturesToggle::dismissableNotification, action=action@{ message, _ ->
+        val dismissCommand = findClickCommand(message) { it.startsWith("/dismissnotification ") } ?: return@action
+
+        OverlayFeature.setOverlay(DismissableNotificationOverlay(message, dismissCommand))
     }),
     DuelInvite(Regex("(\\[.*] )?(?<player>\\S{1,16}) has invited you to (?<duel>\\S+)!"), FeaturesToggle::duelInvite, action=action@{ _, result ->
         val player = result.groups["player"]?.value ?: return@action
         val duel = result.groups["duel"]?.value ?: return@action
 
         OverlayFeature.setOverlay(DuelInviteOverlay(player, duel))
+    }),
+    EventRewards(Regex("§e§lCLICK HERE §eto claim your rewards!"), FeaturesToggle::eventRewards, action=action@{ message, _ ->
+        findClickCommand(message) { it == "/vieweventrewards" } ?: return@action
+
+        OverlayFeature.setOverlay(EventRewardsOverlay())
     }),
     FriendRequest(Regex("Friend request from ((?<rank>\\[.+] )?(?<player>\\S{1,16})).*"), FeaturesToggle::friendRequest, action=action@{ _, result ->
         val player = result.groups["player"]?.value ?: return@action
@@ -77,21 +140,32 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         OverlayFeature.setOverlay(GuildRequestOverlay(inviter, guildName))
     }),
-    OptionSelect(Regex("§eSelect an option: "), FeaturesToggle::npcOptionSelection, action=action@{ message, _ ->
+    NewObjective(Regex("NEW OBJECTIVE"), FeaturesToggle::newObjective, action=action@{ message, _ ->
+        ChatHandler.waitForMessages(1) action@{ messages ->
+            val objective = messages.firstOrNull() ?: return@action
+            OverlayFeature.setOverlay(NewObjectiveOverlay(message, objective))
+        }
+    }),
+    OptionSelect(Regex("Select an option: "), FeaturesToggle::npcOptionSelection, action=action@{ message, _ ->
         val optionComponent = findComponent(message) { ChatFormatting.stripFormatting(((it as? MutableComponent)?.contents as? PlainTextContents.LiteralContents)?.text)?.trim() == "Select an option:" } ?: return@action
 
         val responses = optionComponent.siblings
 
-        if(!responses.all { (it.style.clickEvent as? ClickEvent.RunCommand)?.command?.startsWith("/selectnpcoption ") == true }) return@action
+        if(!responses.all { (it.style.clickEvent as? ClickEvent.Custom)?.id?.equals(dialogueResponseId) == true }) return@action
 
         val texts = responses.mapNotNull { it.string.trim().replace("[", "").replace("]", "") }
-        val commands = responses.mapNotNull { (it.style.clickEvent as? ClickEvent.RunCommand)?.command }.map { if(it.startsWith("/")) it.substring(1) else it }
+        val clickEvents = responses.mapNotNull { (it.style.clickEvent as? ClickEvent.Custom) }.filter { it.id == dialogueResponseId }
 
-        if(responses.size != texts.size || responses.size != commands.size) return@action
+        if(responses.size != texts.size || responses.size != clickEvents.size) return@action
 
         when(responses.size) {
             1 -> {
-                OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], commands[0]))
+                if(ChatFormatting.stripFormatting(texts[0]) == "LEAVE" && isCritterSafariLeave()) {
+                    // The user was prompted if they want to leave the Critter Safari
+                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], clickEvents[0], "Leave the Critter Safari?"))
+                } else {
+                    OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], clickEvents[0]))
+                }
             }
 
             2 -> {
@@ -100,14 +174,14 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                     OverlayFeature.setOverlay(
                         TwoOptionsSelectOverlay(
                             texts[0],
-                            commands[0],
+                            clickEvents[0],
                             texts[1],
-                            commands[1],
+                            clickEvents[1],
                             "Accept Hoppity's Chocolate Rabbit?"
                         )
                     )
                 } else {
-                    OverlayFeature.setOverlay(TwoOptionsSelectOverlay(texts[0], commands[0], texts[1], commands[1]))
+                    OverlayFeature.setOverlay(TwoOptionsSelectOverlay(texts[0], clickEvents[0], texts[1], clickEvents[1]))
                 }
             }
 
@@ -115,11 +189,11 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 OverlayFeature.setOverlay(
                     ThreeOptionsSelectOverlay(
                         texts[0],
-                        commands[0],
+                        clickEvents[0],
                         texts[1],
-                        commands[1],
+                        clickEvents[1],
                         texts[2],
-                        commands[2]
+                        clickEvents[2]
                     )
                 )
             }
@@ -128,13 +202,13 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 OverlayFeature.setOverlay(
                     FourOptionsSelectOverlay(
                         texts[0],
-                        commands[0],
+                        clickEvents[0],
                         texts[1],
-                        commands[1],
+                        clickEvents[1],
                         texts[2],
-                        commands[2],
+                        clickEvents[2],
                         texts[3],
-                        commands[3]
+                        clickEvents[3]
                     )
                 )
             }
@@ -143,15 +217,15 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 OverlayFeature.setOverlay(
                     FiveOptionsSelectOverlay(
                         texts[0],
-                        commands[0],
+                        clickEvents[0],
                         texts[1],
-                        commands[1],
+                        clickEvents[1],
                         texts[2],
-                        commands[2],
+                        clickEvents[2],
                         texts[3],
-                        commands[3],
+                        clickEvents[3],
                         texts[4],
-                        commands[4]
+                        clickEvents[4]
                     )
                 )
             }
@@ -164,7 +238,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         val partyCommand = PartyCommandOverlay.PartyCommand.getCommand(command)
 
         if(partyCommand == null) {
-            logger.sendDebug("[PO] Unknown party command received, ignoring it: $command")
+            logger.sendInfo("[PO] Unknown party command received, ignoring it: $command")
             return@action
         }
 
@@ -175,16 +249,28 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         OverlayFeature.setOverlay(PartyInviteOverlay(player))
     }),
+    SafariMilestoneReminder(Regex("§2§lMILESTONES! §aYou have unclaimed §2Safari Milestones§a!"), FeaturesToggle::safariMilestoneReminder, action=action@{ _, _ ->
+        OverlayFeature.setOverlay(SafariMilestoneReminderOverlay())
+    }),
     SkyblockTrade(Regex("(?<player>\\S{1,16}) (?:§.)?has sent you a trade request"), FeaturesToggle::skyblockTrade, action=action@{ message, result ->
         val player = result.groups["player"]?.value ?: return@action
         val acceptCommand = findClickCommand(message) { it.startsWith("/tradeaccept") } ?: return@action
 
         OverlayFeature.setOverlay(SkyblockTradeOverlay(player, acceptCommand))
     }),
-    StarlynSisterRewards(Regex("Come see me at §6Torrhus Canyon §for §e§lCLICK HERE§f to claim your rewards!"), FeaturesToggle::starlynSisterRewards, action=action@{ message, _ ->
+    StarlynSisterRewards(Regex("Come see me at (?:§2Moonglade Marsh|§6Torrhus Canyon) §for §e§lCLICK HERE§f to claim your rewards!"), FeaturesToggle::starlynSisterRewards, action=action@{ message, _ ->
         findClickCommand(message) { it == "/starlynsisterrewards" } ?: return@action
 
         OverlayFeature.setOverlay(StarlynSisterRewardsOverlay())
+    }),
+    StatDiscovery(Regex("^NEW STAT DISCOVERED! "), FeaturesToggle::statDiscovery, action=action@{ message, _ ->
+        ChatHandler.waitForMessages(2) action@{ messages ->
+            val statExplanation = messages.lastOrNull() ?: return@action
+            OverlayFeature.setOverlay(StatDiscoveryOverlay(message, statExplanation))
+        }
+    }),
+    TimberNotification(Regex("TIMBER! You felled the entire"), FeaturesToggle::timberNotification, action=action@{ message, _ ->
+        OverlayFeature.setOverlay(TimberNotificationOverlay(message))
     }),
     TrapperHunt(Regex("Accept the trapper's task to hunt the animal?"), FeaturesToggle::trapperHunt, action=action@{ message, _ ->
         lastTrapperQuest = Clock.System.now()
@@ -203,15 +289,35 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
             OverlayFeature.setOverlay(TrapperRestartOverlay())
         }
     }),
+    TreeGiftMilestone(Regex("§eClick to claim rewards!"), FeaturesToggle::treeGiftMilestone, action=action@{ message, _ ->
+        val command = findClickCommand(message) { it.startsWith("/treegifts ") } ?: return@action
+
+        val treeGiftMessage = ChatHandler.getLastMessages(10).firstOrNull {
+            it.string.trim().startsWith("TREE GIFTS MILESTONE")
+        } ?: return@action
+
+        val strippedMessage = MutableComponent.create(treeGiftMessage.contents)
+        treeGiftMessage.siblings.filter { it.string.trim() != "TREE GIFTS MILESTONE" }.forEach {
+            strippedMessage.append(it)
+        }
+        strippedMessage.style = treeGiftMessage.style
+
+        OverlayFeature.setOverlay(TreeGiftMilestoneOverlay(strippedMessage, command))
+    }),
     TrophyFishGg(Regex("§6§lCLICK HERE §eto say §6gg§e!"), FeaturesToggle::trophyFishGg, action={ _, _ -> OverlayFeature.setOverlay(TrophyFishGgOverlay()) });
 
     companion object {
         private val logger = LoggerFactory.getLogger(ChatRegex::class.java)
+        private val formattingByName = ChatFormatting.entries.associateBy {
+            sanitizeColorName(it.name)
+        }
 
         val floorPattern = Regex("Floor (I{1,3}|IV|VI{0,2})$")
         val abiphoneCallerPattern = Regex("✆ (.+) (§e)?✆")
         val hoppityCallPattern = Regex("\\[NPC] Hoppity: ✆ I just got a new Chocolate Rabbit and was wondering if you wanted to buy it\\.")
+        val critterSafariLeavePattern = Regex("§fWould you like to leave the §2Critter Safari§f?")
         val guildInvitePattern = Regex("has invited you to join their guild, (.+)!")
+        val dialogueResponseId = Identifier.fromNamespaceAndPath("skyblock", "dialogue_response")
 
         var lastTrapperQuest: Instant? = null
 
@@ -228,8 +334,14 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
         }
 
         private fun isHoppityOptionAccept(): Boolean {
-            return ChatHandler.findInHistory(5) { message ->
+            return ChatHandler.findInHistory(10) { message ->
                 hoppityCallPattern.containsMatchIn(ChatFormatting.stripFormatting(message) ?: "")
+            } != null
+        }
+
+        private fun isCritterSafariLeave(): Boolean {
+            return ChatHandler.findInHistory(10) { message ->
+                critterSafariLeavePattern.containsMatchIn(message)
             } != null
         }
 
@@ -351,9 +463,21 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
 
         private fun formatMessageWithColor(component: Component): String {
             val color = component.style.color?.serialize()
-            val legacyFormatting = ChatFormatting.getByName(color)
+            val legacyFormatting = getByName(color)
 
             return (legacyFormatting?.toString() ?: "") + component.string
+        }
+
+        private fun sanitizeColorName(color: String): String {
+            return color.lowercase().replace("[^a-z]".toRegex(), "")
+        }
+
+        private fun getByName(color: String?): ChatFormatting? {
+            if(color == null) return null
+
+            val sanitized = sanitizeColorName(color)
+
+            return formattingByName[sanitized]
         }
     }
 }

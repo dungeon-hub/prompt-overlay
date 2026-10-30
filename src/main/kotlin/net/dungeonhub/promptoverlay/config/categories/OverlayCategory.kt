@@ -50,6 +50,11 @@ object OverlayCategory : CategoryKt("overlay") {
         slider = true
     }
 
+    val soundsEnabled by boolean("sounds_enabled", true) {
+        name = Literal("Enable Sounds")
+        description = Literal("Play sounds when prompt overlays appear.")
+    }
+
     val backgroundColor by color("background_color", 0xA0000000.toInt()) {
         name = Literal("Background Color")
         allowAlpha = true
@@ -95,6 +100,11 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("The color of the abiphone call overlay.")
     }
 
+    val areaDiscoveryColor by color("area_discovery_color", Color(0xFFAA00).rgb) {
+        name = Literal("Area Discovery Color")
+        description = Literal("The color of the overlay that appears when discovering a new area.")
+    }
+
     val catacombsRequeueColor by color("catacombs_requeue_color", Color.DARK_GRAY.rgb) {
         name = Literal("Catacombs Requeue Color")
         description = Literal("The color of the catacombs requeue overlay.")
@@ -105,9 +115,19 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("The color of the dark auction warp overlay.")
     }
 
+    val dismissableNotificationColor by color("dismissable_notification_color", Color.ORANGE.rgb) {
+        name = Literal("Dismissable Notification Color")
+        description = Literal("The color of the dismissable notification overlay.")
+    }
+
     val duelColor by color("duel_color", Color.RED.rgb) {
         name = Literal("Duel Color")
         description = Literal("The color of the duel invite overlay.")
+    }
+
+    val eventRewards by color("event_rewards_color", Color.DARK_GRAY.rgb) {
+        name = Literal("Event Rewards Color")
+        description = Literal("The color of the event rewards overlay.")
     }
 
     val friendColor by color("friend_color", Color.PINK.rgb) {
@@ -120,8 +140,13 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("The color of the guild request overlay.")
     }
 
+    val newObjective by color("new_objective", Color(0xFFAA00).rgb) {
+        name = Literal("New Objective Color")
+        description = Literal("The color of the new objective overlay.")
+    }
+
     val optionSelectColor by color("option_select_color", Color.GRAY.rgb) {
-        name = Literal("Option Select")
+        name = Literal("Option Select Color")
         description = Literal("The color of the generic option select - used in NPC dialogs such as conversations.")
     }
 
@@ -130,9 +155,29 @@ object OverlayCategory : CategoryKt("overlay") {
         description = Literal("The color of the party invite overlay.")
     }
 
+    val safariMilestoneReminderColor by color("safari_milestone_reminder_color", Color.ORANGE.rgb) {
+        name = Literal("Safari Milestone Reminder Color")
+        description = Literal("The color of the safari milestone reminder overlay.")
+    }
+
+    val starfallMeetingReminderColor by color("starfall_meeting_reminder_color", Color.PINK.rgb) {
+        name = Literal("Starfall Meeting Reminder Color")
+        description = Literal("The color of the Starfall Meeting reminder overlay.")
+    }
+
     val starlynSisterColor by color("starlyn_sister_color", Color.YELLOW.rgb) {
         name = Literal("Starlyn Sister Color")
         description = Literal("The color of the starlyn sister rewards overlay.")
+    }
+
+    val statDiscovery by color("stat_discovery_color", Color(0xFFAA00).rgb) {
+        name = Literal("Stat Discovery Color")
+        description = Literal("The color of the stat discovery overlay.")
+    }
+
+    val timberColor by color("timber_notification_color", Color(0xAA0000).rgb) {
+        name = Literal("Timber Notification Color")
+        description = Literal("The color of the timber notification overlay.")
     }
 
     val tradeColor by color("trade_color", Color(0x2BA801).rgb) {
@@ -148,6 +193,11 @@ object OverlayCategory : CategoryKt("overlay") {
     val travelingZooColor by color("traveling_zoo_warp_color", Color.BLACK.rgb) {
         name = Literal("Traveling Zoo Color")
         description = Literal("The color of the traveling zoo warp overlay.")
+    }
+
+    val treeGiftMilestoneColor by color("tree_gift_milestone_color", Color.GREEN.rgb) {
+        name = Literal("Tree Gift Milestone Color")
+        description = Literal("The color of the tree gift milestone overlay.")
     }
 
     val trophyFishColor by color("trophy_fish_color", Color.YELLOW.rgb) {

@@ -16,10 +16,12 @@ import kotlin.test.assertTrue
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.enums.RemoveType
+import net.minecraft.SharedConstants
 import net.minecraft.client.Minecraft
 import net.minecraft.client.gui.Font
 import net.minecraft.client.gui.GuiGraphicsExtractor
 import net.minecraft.network.chat.Component
+import net.minecraft.server.Bootstrap
 import net.minecraft.util.FormattedCharSequence
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
@@ -36,6 +38,8 @@ class OverlayFeatureTest {
 
     @BeforeTest
     fun installMinecraftWithMockFont() {
+        SharedConstants.tryDetectVersion()
+        Bootstrap.bootStrap()
         previousMinecraft = minecraftInstanceField.get(null) as Minecraft?
         font = mock(Font::class.java)
         setInstanceField(font, "lineHeight", 9)
@@ -220,11 +224,19 @@ class OverlayFeatureTest {
 
     @Test
     fun `queued time counts toward display duration`() {
-        val overlay = TestOverlay(0, maxDisplayDuration = 5.seconds)
-        val entry = PromptEntry(1, overlay, enqueuedAt = Instant.fromEpochMilliseconds(1000))
+        val overlay = TestOverlay(0, maxDisplayDuration = configuredDuration)
+        val enqueuedAt = Instant.fromEpochMilliseconds(1_000)
+        val entry = PromptEntry(1, overlay, enqueuedAt)
+        val queuedTime = 2.seconds
 
-        assertEquals(3.seconds, OverlayFeature.remainingDisplayDuration(entry, currentTime = Instant.fromEpochMilliseconds(3_000)))
-        assertEquals(Duration.ZERO, OverlayFeature.remainingDisplayDuration(entry, currentTime = Instant.fromEpochMilliseconds(7_000)))
+        assertEquals(
+            configuredDuration - queuedTime,
+            OverlayFeature.remainingDisplayDuration(entry, currentTime = enqueuedAt + queuedTime),
+        )
+        assertEquals(
+            configuredDuration - configuredDuration,
+            OverlayFeature.remainingDisplayDuration(entry, currentTime = enqueuedAt + configuredDuration + 1.seconds),
+        )
     }
 
     @Test

@@ -6,7 +6,11 @@ interface OneOptionOverlay {
     /**
      * @return The key currently set for selecting the first option.
      */
-    fun firstOptionKey(): String = PromptOverlayApi.getKeyMappingProvider().firstOptionKeyName
+    fun firstOptionKey(): String = try {
+        PromptOverlayApi.getKeyMappingProvider().firstOptionKeyName
+    } catch (_: IllegalStateException) {
+        ""
+    }
 
     fun firstOption()
 }

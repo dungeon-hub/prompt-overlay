@@ -2,12 +2,6 @@ package net.dungeonhub.promptoverlay
 
 import net.dungeonhub.promptoverlay.api.KeyMappingProvider
 import net.dungeonhub.promptoverlay.api.OverlayHandler
-import net.dungeonhub.promptoverlay.api.LifecycleOverlayHandler
-import net.dungeonhub.promptoverlay.api.PromptRejectionReason
-import net.dungeonhub.promptoverlay.api.PromptRequest
-import net.dungeonhub.promptoverlay.api.PromptSource
-import net.dungeonhub.promptoverlay.api.PromptSubmissionStatus
-import net.dungeonhub.promptoverlay.api.PromptSubmissionResult
 import net.dungeonhub.promptoverlay.api.SetOverlayResult
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.fabricmc.loader.api.FabricLoader
@@ -54,36 +48,21 @@ object PromptOverlayApi {
             ?: return overlayError(IllegalStateException("Prompt Overlay is installed, but no overlay handler is registered."))
 
         return try {
-            if (overlayHandler is LifecycleOverlayHandler) {
-                val result = overlayHandler.submit(PromptRequest(overlay, PromptSource("legacy-api")))
-                if (result.status == PromptSubmissionStatus.SUBMITTED) SetOverlayResult.Queued
-                else overlayError(IllegalStateException("Lifecycle handler rejected legacy prompt: ${result.reason ?: result.status}"))
-            } else {
-                overlayHandler.setOverlay(overlay)
-                SetOverlayResult.Queued
-            }
-        } catch (throwable: Throwable) {
+            overlayHandler.setOverlay(overlay)
+            SetOverlayResult.Queued
+        } catch (exception: Exception) {
+            overlayError(exception)
+        } catch (linkageError: LinkageError) {
             // Linkage errors (for example NoSuchFieldError) are particularly important here: they can occur when a mod bundles an older API whose Overlay implementation lacks newer members.
-            overlayError(throwable)
+            overlayError(linkageError)
         }
-    }
-
-    /** Submits a lifecycle-aware prompt without throwing when this optional mod is absent. */
-    @JvmStatic
-    fun submit(request: PromptRequest): PromptSubmissionResult {
-        if (!FabricLoader.getInstance().isModLoaded("prompt-overlay")) return PromptSubmissionResult.unavailable()
-        val handler = promptOverlay
-        if (handler !is LifecycleOverlayHandler) {
-            return PromptSubmissionResult.rejected(PromptRejectionReason.HANDLER_NOT_READY)
-        }
-        return handler.submit(request)
     }
 
     private fun overlayError(throwable: Throwable): SetOverlayResult.Error {
         logger.error("An error occurred while a mod tried to queue an overlay.", throwable)
 
         Minecraft.getInstance().execute {
-            Minecraft.getInstance().gui.chat.addClientSystemMessage(
+            Minecraft.getInstance().gui.hud.chat.addClientSystemMessage(
                 Component.literal(
                     "An error occurred while a mod tried to set an overlay. Please make sure that your mods are on their latest version."
                 ).withStyle(ChatFormatting.RED)
