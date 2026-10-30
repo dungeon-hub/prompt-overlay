@@ -24,7 +24,7 @@ Configuration includes per-feature toggles, overlay duration and colors, ignored
 
 ## Developer API
 
-Other mods can submit custom overlays without requiring Prompt Overlay to be installed. The API supports action and option templates, prompt-specific lifetime limits, and a failure result so integrations can fall back to their original interaction.
+Other mods can submit custom overlays without requiring Prompt Overlay to be installed. The API supports action and option templates, prompt-specific lifetime limits, cancelable prompts with outcome callbacks, and a failure result so integrations can fall back to their original interaction.
 
 See the [API integration guide](api/README.md) for dependency setup, a complete example, and further information.
 

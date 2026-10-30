@@ -2,6 +2,8 @@ package net.dungeonhub.promptoverlay
 
 import net.dungeonhub.promptoverlay.api.KeyMappingProvider
 import net.dungeonhub.promptoverlay.api.OverlayHandler
+import net.dungeonhub.promptoverlay.api.PromptHandle
+import net.dungeonhub.promptoverlay.api.PromptListener
 import net.dungeonhub.promptoverlay.api.SetOverlayResult
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.fabricmc.loader.api.FabricLoader
@@ -55,6 +57,38 @@ object PromptOverlayApi {
         } catch (linkageError: LinkageError) {
             // Linkage errors (for example NoSuchFieldError) are particularly important here: they can occur when a mod bundles an older API whose Overlay implementation lacks newer members.
             overlayError(linkageError)
+        }
+    }
+
+    /**
+     * Queues an overlay like [setOverlay], but returns a [PromptHandle] that can cancel the prompt
+     * and notifies [listener] once with the [net.dungeonhub.promptoverlay.api.PromptOutcome].
+     *
+     * @return the handle, or `null` if Prompt Overlay is not installed or the prompt could not be queued.
+     * In that case the listener is never called, so the calling mod should use its normal fallback.
+     */
+    @JvmStatic
+    @JvmOverloads
+    fun submit(overlay: Overlay, listener: PromptListener? = null): PromptHandle? {
+        if (!FabricLoader.getInstance().isModLoaded("prompt-overlay")) {
+            return null
+        }
+
+        val overlayHandler = promptOverlay
+        if (overlayHandler == null) {
+            overlayError(IllegalStateException("Prompt Overlay is installed, but no overlay handler is registered."))
+            return null
+        }
+
+        return try {
+            overlayHandler.submit(overlay, listener)
+        } catch (exception: Exception) {
+            overlayError(exception)
+            null
+        } catch (linkageError: LinkageError) {
+            // An installed Prompt Overlay that predates this API version does not implement submit.
+            overlayError(linkageError)
+            null
         }
     }
 

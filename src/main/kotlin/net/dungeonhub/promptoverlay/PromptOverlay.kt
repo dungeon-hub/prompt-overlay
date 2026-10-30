@@ -2,9 +2,8 @@ package net.dungeonhub.promptoverlay
 
 import com.teamresourceful.resourcefulconfig.api.client.ResourcefulConfigScreen
 import com.teamresourceful.resourcefulconfig.api.loader.Configurator
-import net.dungeonhub.promptoverlay.api.LifecycleOverlayHandler
-import net.dungeonhub.promptoverlay.api.PromptRequest
-import net.dungeonhub.promptoverlay.api.PromptSubmissionResult
+import net.dungeonhub.promptoverlay.api.OverlayHandler
+import net.dungeonhub.promptoverlay.api.PromptListener
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.Config
 import net.dungeonhub.promptoverlay.feature.ChatHandler
@@ -21,7 +20,7 @@ import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.Minecraft
 import net.minecraft.network.chat.Component
 
-object PromptOverlay : ClientModInitializer, LifecycleOverlayHandler {
+object PromptOverlay : ClientModInitializer, OverlayHandler {
     const val MOD_ID = "prompt-overlay"
 
     lateinit var version: String
@@ -80,5 +79,5 @@ object PromptOverlay : ClientModInitializer, LifecycleOverlayHandler {
     }
 
     override fun setOverlay(overlay: Overlay) = OverlayFeature.setOverlay(overlay)
-    override fun submit(request: PromptRequest): PromptSubmissionResult = OverlayFeature.submit(request)
+    override fun submit(overlay: Overlay, listener: PromptListener?) = OverlayFeature.submit(overlay, listener)
 }

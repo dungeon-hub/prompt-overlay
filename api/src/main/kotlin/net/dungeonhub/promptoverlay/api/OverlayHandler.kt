@@ -4,8 +4,6 @@ import net.dungeonhub.promptoverlay.api.render.Overlay
 
 interface OverlayHandler {
     fun setOverlay(overlay: Overlay)
-}
 
-interface LifecycleOverlayHandler : OverlayHandler {
-    fun submit(request: PromptRequest): PromptSubmissionResult
+    fun submit(overlay: Overlay, listener: PromptListener?): PromptHandle
 }

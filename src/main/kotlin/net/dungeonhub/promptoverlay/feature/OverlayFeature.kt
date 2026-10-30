@@ -2,6 +2,9 @@ package net.dungeonhub.promptoverlay.feature
 
 import kotlinx.coroutines.*
 import net.dungeonhub.promptoverlay.PromptOverlay.MOD_ID
+import net.dungeonhub.promptoverlay.api.PromptHandle
+import net.dungeonhub.promptoverlay.api.PromptListener
+import net.dungeonhub.promptoverlay.api.PromptOutcome
 import net.dungeonhub.promptoverlay.api.render.Overlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
 import net.dungeonhub.promptoverlay.enums.PromptAnimation
@@ -14,6 +17,7 @@ import net.minecraft.client.resources.sounds.SimpleSoundInstance
 import net.minecraft.resources.Identifier
 import net.minecraft.sounds.SoundEvent
 import net.minecraft.sounds.SoundEvents
+import org.slf4j.LoggerFactory
 import java.util.concurrent.Executors
 import kotlin.math.pow
 import kotlin.time.Clock
@@ -23,6 +27,8 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
 
 object OverlayFeature {
+    private val logger = LoggerFactory.getLogger(OverlayFeature::class.java)
+
     internal class SoundSettings(
         val event: SoundEvent,
         val pitch: Float = 1.0f,
@@ -49,6 +55,7 @@ object OverlayFeature {
         onExit = ::removeCurrentOverlay,
         onExitComplete = { OverlayRenderer.completeAnimatingOut() },
         isExpired = { remainingDisplayDuration(it) == Duration.ZERO },
+        onResolved = ::notifyListener,
     )
 
     fun init() {
@@ -62,6 +69,27 @@ object OverlayFeature {
         queue.enqueue(overlay)
     }
 
+    fun submit(overlay: Overlay, listener: PromptListener?): PromptHandle {
+        val id = queue.enqueue(overlay, listener).id
+        return object : PromptHandle {
+            override val isActive get() = queue.isActive(id)
+            override fun cancel() = queue.cancel(id)
+        }
+    }
+
+    private fun notifyListener(entry: PromptEntry, outcome: PromptOutcome) {
+        val listener = entry.listener ?: return
+        Minecraft.getInstance().execute {
+            // Listeners come from third-party mods. A failing listener must not affect the prompt queue.
+            @Suppress("TooGenericExceptionCaught")
+            try {
+                listener.onResolved(outcome)
+            } catch (exception: Exception) {
+                logger.error("Prompt listener failed for prompt {}", entry.id, exception)
+            }
+        }
+    }
+
     private fun setCurrentOverlay(entry: PromptEntry) {
         playNotificationSound()
 
@@ -69,7 +97,7 @@ object OverlayFeature {
         hideMessageJob?.cancel()
         hideMessageJob = scheduler.launch {
             delay(remainingDisplayDuration(entry))
-            removeOverlay(entry.id, RemoveType.Dismiss)
+            queue.removePrompt(entry.id, RemoveType.Dismiss, PromptOutcome.TIMED_OUT)
         }
     }
 
@@ -92,6 +120,7 @@ object OverlayFeature {
 
     internal fun removeOverlay(entry: PromptEntry, type: RemoveType) = removeOverlay(entry.id, type)
     internal fun currentPrompt() = queue.currentPrompt()
+    internal fun markActionFailed(entry: PromptEntry) = queue.markActionFailed(entry.id)
 
     fun render(graphics: GuiGraphicsExtractor) {
         val overlay = (
