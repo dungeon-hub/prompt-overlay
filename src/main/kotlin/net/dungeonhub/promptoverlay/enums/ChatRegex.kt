@@ -149,12 +149,23 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
     OptionSelect(Regex("Select an option: "), FeaturesToggle::npcOptionSelection, action=action@{ message, _ ->
         val optionComponent = findComponent(message) { ChatFormatting.stripFormatting(((it as? MutableComponent)?.contents as? PlainTextContents.LiteralContents)?.text)?.trim() == "Select an option:" } ?: return@action
 
-        val responses = optionComponent.siblings
+        // Options are either separate siblings, each with its own click event, or grouped as the
+        // children of one (empty) sibling that carries a shared click event.
+        val responses = optionComponent.siblings.flatMap { response ->
+            val parentEvent = response.style.clickEvent
+            if (response.siblings.isNotEmpty() && response.string.trim().isNotEmpty() &&
+                ((response as? MutableComponent)?.contents as? PlainTextContents.LiteralContents)?.text.isNullOrEmpty()
+            ) {
+                response.siblings.map { child -> child to (child.style.clickEvent ?: parentEvent) }
+            } else {
+                listOf(response to parentEvent)
+            }
+        }
 
-        if(!responses.all { (it.style.clickEvent as? ClickEvent.Custom)?.id?.equals(dialogueResponseId) == true }) return@action
+        if(!responses.all { (it.second as? ClickEvent.Custom)?.id?.equals(dialogueResponseId) == true }) return@action
 
-        val texts = responses.mapNotNull { it.string.trim().replace("[", "").replace("]", "") }
-        val clickEvents = responses.mapNotNull { (it.style.clickEvent as? ClickEvent.Custom) }.filter { it.id == dialogueResponseId }
+        val texts = responses.map { it.first.string.trim().removePrefix("➜").replace("[", "").replace("]", "").trim() }
+        val clickEvents = responses.mapNotNull { (it.second as? ClickEvent.Custom) }.filter { it.id == dialogueResponseId }
 
         if(responses.size != texts.size || responses.size != clickEvents.size) return@action
 
