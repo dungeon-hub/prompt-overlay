@@ -28,7 +28,7 @@ class ChatRegexTest {
     fun installMockMinecraft() {
         SharedConstants.tryDetectVersion()
         Bootstrap.bootStrap()
-        previousMinecraft = minecraftInstanceField.get(null) as Minecraft?
+        previousMinecraft = minecraftInstanceField.get(null) as? Minecraft
         // OverlayFeature schedules the notification sound through Minecraft.execute
         minecraftInstanceField.set(null, mock(Minecraft::class.java))
     }
