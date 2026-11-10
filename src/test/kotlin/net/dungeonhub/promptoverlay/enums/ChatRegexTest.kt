@@ -1,12 +1,7 @@
 package net.dungeonhub.promptoverlay.enums
 
-import java.lang.reflect.Field
-import kotlin.test.AfterTest
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertIs
 import net.dungeonhub.promptoverlay.feature.OverlayFeature
+import net.dungeonhub.promptoverlay.feature.PromptQueueManager
 import net.dungeonhub.promptoverlay.overlays.ThreeOptionsSelectOverlay
 import net.minecraft.SharedConstants
 import net.minecraft.client.Minecraft
@@ -16,12 +11,18 @@ import net.minecraft.network.chat.Component
 import net.minecraft.network.chat.ComponentSerialization
 import net.minecraft.server.Bootstrap
 import org.mockito.Mockito.mock
+import java.lang.reflect.Field
+import kotlin.test.*
 
 class ChatRegexTest {
     private val minecraftInstanceField: Field = Minecraft::class.java.getDeclaredField("instance").apply {
         trySetAccessible()
     }
     private var previousMinecraft: Minecraft? = null
+    private val queue by lazy {
+        OverlayFeature::class.java.getDeclaredField("queue").apply { trySetAccessible() }
+            .get(null) as PromptQueueManager
+    }
 
     @BeforeTest
     fun installMockMinecraft() {
@@ -35,6 +36,8 @@ class ChatRegexTest {
     @AfterTest
     fun restoreMinecraft() {
         OverlayFeature.removeOverlay(RemoveType.Dismiss)
+        // Finish the exit immediately instead of waiting for the animation delay
+        queue.outgoingPrompt()?.let { queue.completeExit(it.id) }
         minecraftInstanceField.set(null, previousMinecraft)
     }
 
