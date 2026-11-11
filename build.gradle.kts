@@ -149,7 +149,6 @@ tasks.shadowJar {
     relocate("org.apache.commons", "net.dungeonhub.promptoverlay.libs.apache.commons")
     relocate("org.yaml.snakeyaml", "net.dungeonhub.promptoverlay.libs.snakeyaml")
     relocate("io.github.oshai.kotlinlogging", "net.dungeonhub.promptoverlay.libs.kotlinlogging")
-    relocate("com.teamresourceful.resourcefulconfigkt", "net.dungeonhub.promptoverlay.libs.resourcefulconfigkt")
 
     from("LICENSE") {
         rename { "${it}_${project.base.archivesName.get()}" }
