@@ -41,8 +41,10 @@ object ChatHandler {
         for(regex in ChatRegex.entries.filter { it.enabled() }) {
             val result = regex.regex.find(message.string) ?: continue
 
-            regex.action(message, result)
-            foundAction = true
+            // Only actions that accepted the message suppress the catch-all fallback
+            if(regex.action(message, result)) {
+                foundAction = true
+            }
         }
 
         if(foundAction) return
@@ -164,18 +166,16 @@ object ChatHandler {
         return getLastMessages(count, skipCurrent).firstOrNull { predicate(it.string) }
     }
 
+    /**
+     * Finds the components that define an executable click event. Traversal stops at a component
+     * with such an event, its children are not searched.
+     */
     private fun findAllClickCommands(component: Component): List<Component> {
-        val clickEvent = component.style.clickEvent
-
-        if(clickEvent.isExecutable()) {
+        if(component.style.clickEvent.isExecutable()) {
             return listOf(component)
         }
 
-        val foundEvents = component.siblings.flatMap {
-            findAllClickCommands(it)
-        }
-
-        return foundEvents
+        return component.siblings.flatMap { findAllClickCommands(it) }
     }
 
     /**
