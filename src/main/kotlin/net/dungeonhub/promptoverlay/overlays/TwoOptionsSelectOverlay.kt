@@ -5,26 +5,23 @@ import net.dungeonhub.promptoverlay.api.render.DeniableOverlay
 import net.dungeonhub.promptoverlay.api.render.TwoActionsOverlay
 import net.dungeonhub.promptoverlay.api.render.TwoOptionsOverlay
 import net.dungeonhub.promptoverlay.config.categories.OverlayCategory
-import net.minecraft.client.Minecraft
+import net.dungeonhub.promptoverlay.feature.ChatHandler.execute
 import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
-import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket
 import java.awt.Color
 
 class TwoOptionsSelectOverlay(
     val firstOption: String,
-    val firstAction: ClickEvent.Custom,
+    val firstAction: ClickEvent,
     val secondOption: String,
-    val secondAction: ClickEvent.Custom,
+    val secondAction: ClickEvent,
     messageOverride: String? = null
 ): AcceptableOverlay, DeniableOverlay, TwoActionsOverlay, TwoOptionsOverlay {
     override val borderColor: Color = Color(OverlayCategory.optionSelectColor)
     override val message = Component.literal(messageOverride ?: "Select an option")
 
     override fun firstOption() {
-        Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.send(ServerboundCustomClickActionPacket(firstAction.id(), firstAction.payload()))
-        }
+        firstAction.execute()
     }
 
     override fun dismissText() = super<TwoActionsOverlay>.dismissText()
@@ -34,9 +31,7 @@ class TwoOptionsSelectOverlay(
     }
 
     override fun secondOption() {
-        Minecraft.getInstance().execute {
-            Minecraft.getInstance().player?.connection?.send(ServerboundCustomClickActionPacket(secondAction.id(), secondAction.payload()))
-        }
+        secondAction.execute()
     }
 
     override fun deny() {
