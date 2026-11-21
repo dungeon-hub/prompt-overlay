@@ -106,14 +106,14 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
             val player = acceptCommand.removePrefix("/friend accept ")
 
             OverlayFeature.setOverlay(FriendRequestOverlay(player))
-            true
+            return@action true
         }
 
         if(acceptCommand.startsWith("/party accept") && FeaturesToggle.partyInvites) {
             val player = acceptCommand.removePrefix("/party accept ")
 
             OverlayFeature.setOverlay(CubeCraftPartyInviteOverlay(player))
-            true
+            return@action true
         }
         false
     }),
@@ -189,6 +189,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 } else {
                     OverlayFeature.setOverlay(SingleOptionSelectOverlay(texts[0], clickEvents[0]))
                 }
+                return@action true
             }
 
             2 -> {
@@ -206,6 +207,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                 } else {
                     OverlayFeature.setOverlay(TwoOptionsSelectOverlay(texts[0], clickEvents[0], texts[1], clickEvents[1]))
                 }
+                return@action true
             }
 
             3 -> {
@@ -219,6 +221,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                         clickEvents[2]
                     )
                 )
+                return@action true
             }
 
             4 -> {
@@ -234,6 +237,7 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                         clickEvents[3]
                     )
                 )
+                return@action true
             }
 
             5 -> {
@@ -251,9 +255,10 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
                         clickEvents[4]
                     )
                 )
+                return@action true
             }
         }
-        true
+        false
     }),
     PartyCommand(Regex("§9Party §8> §.(\\[.*] )?(?<player>\\w{1,16})§.: !(?<command>\\S+)$"), FeaturesToggle::partyCommands, action=action@{ _, result ->
         val player = result.groups["player"]?.value ?: return@action false
