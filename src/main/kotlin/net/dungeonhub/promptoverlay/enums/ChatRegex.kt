@@ -106,14 +106,16 @@ enum class ChatRegex(val regex: Regex, val enabled: () -> Boolean = { true }, va
             val player = acceptCommand.removePrefix("/friend accept ")
 
             OverlayFeature.setOverlay(FriendRequestOverlay(player))
+            true
         }
 
         if(acceptCommand.startsWith("/party accept") && FeaturesToggle.partyInvites) {
             val player = acceptCommand.removePrefix("/party accept ")
 
             OverlayFeature.setOverlay(CubeCraftPartyInviteOverlay(player))
+            true
         }
-        true
+        false
     }),
     DismissableNotification(Regex(""), FeaturesToggle::dismissableNotification, action=action@{ message, _ ->
         val dismissCommand = findClickCommand(message) { it.startsWith("/dismissnotification ") } ?: return@action false
