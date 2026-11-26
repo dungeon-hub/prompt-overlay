@@ -15,4 +15,14 @@ object DevCategory : CategoryKt("dev") {
         name = Literal("Extended Debug output")
         description = Literal("This increases the amount of information sent to you ingame.")
     }
+
+    var catchAllPrompts by boolean("catch_all", false) {
+        name = Literal("Catch All")
+        description = Literal("Experimental. Use at your own risk.\nThis catches all click events in messages and makes them into a default prompt.")
+    }
+
+    var catchAllIgnoreMessages by stringsWithId("catch_all_ignore", "RING...", "joined the lobby!", "Guild >") {
+        name = Literal("Ignore Messages")
+        description = Literal("These chat messages will be ignored for the Catch All prompts. Each line is their own filter.")
+    }
 }

@@ -73,6 +73,7 @@ object PromptOverlay : ClientModInitializer, OverlayHandler {
 
         ClientLifecycleEvents.CLIENT_STOPPING.register {
             ScheduleHandler.shutdown()
+            OverlayFeature.shutdown()
         }
 
         KeyMappingService.init()

@@ -49,7 +49,7 @@ object Config : ConfigKt("$MOD_ID/config") {
 
     var developer by boolean("developer", false) {
         name = Literal("Developer Mode")
-        description = Literal("Reopen the config after updating this value.")
+        description = Literal("Reopen the config after toggling this.")
     }
 
     init {
