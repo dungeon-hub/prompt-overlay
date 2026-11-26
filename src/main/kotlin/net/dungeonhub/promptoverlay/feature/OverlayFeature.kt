@@ -58,6 +58,11 @@ object OverlayFeature {
         ) { graphics, _ -> render(graphics) }
     }
 
+    fun shutdown() {
+        supervisor.cancel()
+        dispatcher.close()
+    }
+
     fun setOverlay(overlay: Overlay) {
         queue.enqueue(overlay)
     }
