@@ -1,8 +1,18 @@
 package net.dungeonhub.promptoverlay.feature
 
+import net.dungeonhub.promptoverlay.config.Config
+import net.dungeonhub.promptoverlay.config.categories.DevCategory
 import net.dungeonhub.promptoverlay.enums.ChatRegex
+import net.dungeonhub.promptoverlay.overlays.FiveOptionsSelectOverlay
+import net.dungeonhub.promptoverlay.overlays.FourOptionsSelectOverlay
+import net.dungeonhub.promptoverlay.overlays.SingleOptionSelectOverlay
+import net.dungeonhub.promptoverlay.overlays.ThreeOptionsSelectOverlay
+import net.dungeonhub.promptoverlay.overlays.TwoOptionsSelectOverlay
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents
+import net.minecraft.client.Minecraft
+import net.minecraft.network.chat.ClickEvent
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.common.ServerboundCustomClickActionPacket
 import java.util.LinkedList
 
 object ChatHandler {
@@ -26,11 +36,67 @@ object ChatHandler {
         addToHistory(message)
         processPendingWaits(message)
 
+        var foundAction = false
+
         for(regex in ChatRegex.entries.filter { it.enabled() }) {
             val result = regex.regex.find(message.string) ?: continue
 
-            regex.action(message, result)
+            // Only actions that accepted the message suppress the catch-all fallback
+            if(regex.action(message, result)) {
+                foundAction = true
+            }
         }
+
+        if(foundAction) return
+
+        handleNotFound(message)
+    }
+
+    private fun handleNotFound(message: Component) {
+        if(!Config.developer || !DevCategory.catchAllPrompts) return
+
+        for(ignoreMessage in DevCategory.catchAllIgnoreMessages) {
+            if(message.string.contains(ignoreMessage)) return
+        }
+
+        val options = findAllClickCommands(message).mapNotNull { component ->
+            val event = component.style.clickEvent?.takeIf { it.isExecutable() } ?: return@mapNotNull null
+            val text = component.string.trim().removePrefix("➜").replace("[", "").replace("]", "").trim()
+
+            text to event
+        }
+
+        if(options.isEmpty()) return
+
+        if(options.size > 5) {
+            // Ignore, because we don't support > 5 components
+            return
+        }
+
+        val overlay = when(options.size) {
+            1 -> SingleOptionSelectOverlay(options[0].first, options[0].second)
+            2 -> TwoOptionsSelectOverlay(options[0].first, options[0].second, options[1].first, options[1].second)
+            3 -> ThreeOptionsSelectOverlay(
+                options[0].first, options[0].second,
+                options[1].first, options[1].second,
+                options[2].first, options[2].second
+            )
+            4 -> FourOptionsSelectOverlay(
+                options[0].first, options[0].second,
+                options[1].first, options[1].second,
+                options[2].first, options[2].second,
+                options[3].first, options[3].second
+            )
+            else -> FiveOptionsSelectOverlay(
+                options[0].first, options[0].second,
+                options[1].first, options[1].second,
+                options[2].first, options[2].second,
+                options[3].first, options[3].second,
+                options[4].first, options[4].second
+            )
+        }
+
+        OverlayFeature.setOverlay(overlay)
     }
 
     /**
@@ -98,5 +164,37 @@ object ChatHandler {
      */
     fun findInHistory(count: Int, skipCurrent: Boolean = true, predicate: (String) -> Boolean): Component? {
         return getLastMessages(count, skipCurrent).firstOrNull { predicate(it.string) }
+    }
+
+    /**
+     * Finds the components that define an executable click event. Traversal stops at a component
+     * with such an event, its children are not searched.
+     */
+    private fun findAllClickCommands(component: Component): List<Component> {
+        if(component.style.clickEvent.isExecutable()) {
+            return listOf(component)
+        }
+
+        return component.siblings.flatMap { findAllClickCommands(it) }
+    }
+
+    /**
+     * Whether [execute] knows how to run this click event.
+     */
+    fun ClickEvent?.isExecutable() = this is ClickEvent.RunCommand || this is ClickEvent.Custom
+
+    /**
+     * Runs the click event on the client thread. Unsupported event types are ignored.
+     */
+    fun ClickEvent.execute() {
+        Minecraft.getInstance().execute {
+            val connection = Minecraft.getInstance().player?.connection ?: return@execute
+
+            when (this) {
+                is ClickEvent.RunCommand -> connection.sendCommand(command.removePrefix("/"))
+                is ClickEvent.Custom -> connection.send(ServerboundCustomClickActionPacket(id(), payload()))
+                else -> {}
+            }
+        }
     }
 }
